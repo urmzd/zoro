@@ -1,6 +1,6 @@
 FROM golang:1.23-alpine AS builder
 
-RUN apk add --no-cache git chromium
+RUN apk add --no-cache git
 RUN go install github.com/swaggo/swag/v2/cmd/swag@latest
 
 WORKDIR /app
@@ -13,11 +13,9 @@ RUN CGO_ENABLED=0 go build -o /zoro ./cmd/zoro
 
 FROM alpine:3.20
 
-RUN apk add --no-cache ca-certificates chromium
+RUN apk add --no-cache ca-certificates
 
 COPY --from=builder /zoro /zoro
-
-ENV CHROME_PATH=/usr/bin/chromium-browser
 
 EXPOSE 8080
 CMD ["/zoro"]

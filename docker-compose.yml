@@ -17,6 +17,19 @@ services:
       retries: 10
       start_period: 30s
 
+  searxng:
+    image: searxng/searxng:latest
+    ports:
+      - "8888:8080"
+    volumes:
+      - ./searxng/settings.yml:/etc/searxng/settings.yml:ro
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
   api:
     build:
       context: ./api
@@ -29,10 +42,14 @@ services:
       NEO4J_PASSWORD: zoro_dev_password
       OLLAMA_HOST: http://host.docker.internal:11434
       OLLAMA_MODEL: qwen3.5:4b
+      OLLAMA_FAST_MODEL: ""
       EMBEDDING_MODEL: nomic-embed-text
       CORS_ORIGINS: http://localhost:3000
+      SEARXNG_URL: http://searxng:8080
     depends_on:
       neo4j:
+        condition: service_healthy
+      searxng:
         condition: service_healthy
     extra_hosts:
       - "host.docker.internal:host-gateway"
