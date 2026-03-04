@@ -2,67 +2,81 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
+	"net/url"
 	"time"
 
-	"github.com/chromedp/chromedp"
 	"github.com/urmzd/zoro/api/internal/model"
 )
 
-type Searcher struct{}
+type Searcher struct {
+	baseURL string
+	client  *http.Client
+}
 
-func NewSearcher() *Searcher {
-	return &Searcher{}
+func NewSearcher(baseURL string) *Searcher {
+	return &Searcher{
+		baseURL: baseURL,
+		client: &http.Client{
+			Timeout: 15 * time.Second,
+		},
+	}
+}
+
+type searxngResponse struct {
+	Results []searxngResult `json:"results"`
+}
+
+type searxngResult struct {
+	Title   string `json:"title"`
+	URL     string `json:"url"`
+	Content string `json:"content"`
 }
 
 func (s *Searcher) Search(ctx context.Context, query string) ([]model.SearchResult, error) {
-	opts := append(chromedp.DefaultExecAllocatorOptions[:],
-		chromedp.Flag("headless", true),
-		chromedp.Flag("disable-gpu", true),
-		chromedp.Flag("no-sandbox", true),
-		chromedp.UserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"),
-	)
+	u := fmt.Sprintf("%s/search?q=%s&format=json&engines=google,bing,duckduckgo",
+		s.baseURL, url.QueryEscape(query))
 
-	allocCtx, allocCancel := chromedp.NewExecAllocator(ctx, opts...)
-	defer allocCancel()
-
-	taskCtx, taskCancel := chromedp.NewContext(allocCtx)
-	defer taskCancel()
-
-	taskCtx, taskCancel = context.WithTimeout(taskCtx, 30*time.Second)
-	defer taskCancel()
-
-	searchURL := fmt.Sprintf("https://www.google.com/search?q=%s&num=8", query)
-
-	var results []model.SearchResult
-	err := chromedp.Run(taskCtx,
-		chromedp.Navigate(searchURL),
-		chromedp.WaitVisible(`#search`, chromedp.ByID),
-		chromedp.Evaluate(`
-			(() => {
-				const results = [];
-				document.querySelectorAll('div.g').forEach(el => {
-					const titleEl = el.querySelector('h3');
-					const linkEl = el.querySelector('a');
-					const snippetEl = el.querySelector('[data-sncf], .VwiC3b, .IsZvec');
-					if (titleEl && linkEl) {
-						results.push({
-							title: titleEl.innerText || '',
-							url: linkEl.href || '',
-							snippet: snippetEl ? snippetEl.innerText : ''
-						});
-					}
-				});
-				return results.slice(0, 8);
-			})()
-		`, &results),
-	)
-
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 	if err != nil {
-		log.Printf("chromedp search error: %v", err)
 		return nil, fmt.Errorf("web search: %w", err)
 	}
 
+	resp, err := s.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("web search: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("web search: searxng returned status %d", resp.StatusCode)
+	}
+
+	var sr searxngResponse
+	if err := json.NewDecoder(resp.Body).Decode(&sr); err != nil {
+		return nil, fmt.Errorf("web search: %w", err)
+	}
+
+	seen := make(map[string]bool)
+	var results []model.SearchResult
+	for _, r := range sr.Results {
+		if seen[r.URL] || r.URL == "" {
+			continue
+		}
+		seen[r.URL] = true
+		results = append(results, model.SearchResult{
+			Title:   r.Title,
+			URL:     r.URL,
+			Snippet: r.Content,
+		})
+		if len(results) >= 8 {
+			break
+		}
+	}
+
+	log.Printf("searxng returned %d results for %q", len(results), query)
 	return results, nil
 }

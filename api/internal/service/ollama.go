@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/urmzd/zoro/api/internal/model"
 )
 
 type OllamaClient struct {
@@ -69,8 +71,12 @@ type extractedRelation struct {
 }
 
 func (c *OllamaClient) Generate(ctx context.Context, prompt string) (string, error) {
+	return c.GenerateWithModel(ctx, prompt, c.model)
+}
+
+func (c *OllamaClient) GenerateWithModel(ctx context.Context, prompt string, model string) (string, error) {
 	req := ollamaGenerateRequest{
-		Model:  c.model,
+		Model:  model,
 		Prompt: prompt,
 		Stream: false,
 	}
@@ -192,6 +198,65 @@ func (c *OllamaClient) Embed(ctx context.Context, text string) ([]float32, error
 		return nil, fmt.Errorf("no embeddings returned")
 	}
 	return result.Embeddings[0], nil
+}
+
+func (c *OllamaClient) ChatStream(ctx context.Context, messages []model.OllamaChatMessage, tools []model.OllamaTool) (<-chan model.OllamaChatChunk, error) {
+	req := model.OllamaChatRequest{
+		Model:    c.model,
+		Messages: messages,
+		Tools:    tools,
+		Stream:   true,
+	}
+	body, err := json.Marshal(req)
+	if err != nil {
+		return nil, fmt.Errorf("marshal chat request: %w", err)
+	}
+
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", c.host+"/api/chat", bytes.NewReader(body))
+	if err != nil {
+		return nil, fmt.Errorf("create chat request: %w", err)
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.httpClient.Do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("ollama chat stream: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		respBody, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		return nil, fmt.Errorf("ollama chat returned %d: %s", resp.StatusCode, respBody)
+	}
+
+	ch := make(chan model.OllamaChatChunk, 64)
+	go func() {
+		defer resp.Body.Close()
+		defer close(ch)
+
+		scanner := bufio.NewScanner(resp.Body)
+		scanner.Buffer(make([]byte, 256*1024), 256*1024)
+		for scanner.Scan() {
+			line := scanner.Bytes()
+			if len(line) == 0 {
+				continue
+			}
+			var chunk model.OllamaChatChunk
+			if err := json.Unmarshal(line, &chunk); err != nil {
+				continue
+			}
+			select {
+			case ch <- chunk:
+			case <-ctx.Done():
+				return
+			}
+			if chunk.Done {
+				return
+			}
+		}
+	}()
+
+	return ch, nil
 }
 
 func (c *OllamaClient) ExtractEntities(ctx context.Context, text string) ([]extractedEntity, []extractedRelation, error) {
