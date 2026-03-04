@@ -11,6 +11,12 @@ const (
 	EventSummaryToken     = "summary_token"
 	EventResearchComplete = "research_complete"
 	EventError            = "error"
+
+	// Chat SSE events
+	EventTextDelta      = "text_delta"
+	EventToolCallStart  = "tool_call_start"
+	EventToolCallResult = "tool_call_result"
+	EventDone           = "done"
 )
 
 type SSEEvent struct {
