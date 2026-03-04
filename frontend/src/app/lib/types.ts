@@ -97,3 +97,39 @@ export interface ResearchState {
   timeline: TimelineEvent[];
   error: string | null;
 }
+
+// Chat types
+
+export type ChatSSEEventType =
+  | "text_delta"
+  | "tool_call_start"
+  | "tool_call_result"
+  | "done"
+  | "error";
+
+export interface ToolCall {
+  id: string;
+  name: string;
+  arguments: string;
+  result?: string;
+}
+
+export interface ChatMessage {
+  role: "user" | "assistant" | "tool";
+  content: string;
+  toolCalls?: ToolCall[];
+}
+
+export interface ChatSession {
+  id: string;
+  messages: ChatMessage[];
+  created_at: string;
+}
+
+export interface ChatState {
+  messages: ChatMessage[];
+  currentAssistantContent: string;
+  currentToolCalls: ToolCall[];
+  status: "idle" | "streaming" | "complete" | "error";
+  error: string | null;
+}
