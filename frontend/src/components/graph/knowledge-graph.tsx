@@ -1,9 +1,8 @@
 "use client";
 
-import { IconSearch } from "@tabler/icons-react";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef } from "react";
-import { getKnowledgeGraph, getNodeDetail, searchKnowledge } from "@/app/lib/api";
+import { getKnowledgeGraph, getNodeDetail } from "@/app/lib/api";
 import { GraphControls } from "@/components/graph/graph-controls";
 import { NodeDetailPanel } from "@/components/graph/node-detail-panel";
 import { useKnowledgeStore } from "@/lib/stores/knowledge-store";
@@ -29,14 +28,11 @@ export function KnowledgeGraph() {
   const {
     graphData,
     selectedNode,
-    searchQuery,
     isLoading,
     highlightedNodes,
     setGraphData,
     setSelectedNode,
-    setSearchQuery,
     setLoading,
-    highlightSubgraph,
   } = useKnowledgeStore();
 
   const loadGraph = useCallback(async () => {
@@ -54,27 +50,6 @@ export function KnowledgeGraph() {
   useEffect(() => {
     loadGraph();
   }, [loadGraph]);
-
-  async function handleSearch(e: React.FormEvent) {
-    e.preventDefault();
-    if (!searchQuery.trim()) {
-      highlightSubgraph([]);
-      return;
-    }
-    try {
-      const results = await searchKnowledge(searchQuery);
-      const nodeIds = new Set<string>();
-      if (results?.facts) {
-        for (const fact of results.facts) {
-          if (fact.source_node?.uuid) nodeIds.add(fact.source_node.uuid);
-          if (fact.target_node?.uuid) nodeIds.add(fact.target_node.uuid);
-        }
-      }
-      highlightSubgraph(Array.from(nodeIds));
-    } catch (err) {
-      console.error("Search failed:", err);
-    }
-  }
 
   // biome-ignore lint/suspicious/noExplicitAny: react-force-graph-2d node type
   async function handleNodeClick(node: any) {
@@ -141,21 +116,6 @@ export function KnowledgeGraph() {
 
   return (
     <div className="relative h-full w-full">
-      {/* Search overlay */}
-      <form
-        onSubmit={handleSearch}
-        className="absolute top-4 left-4 z-10 flex items-center gap-2 rounded-lg border border-border/50 bg-background/80 backdrop-blur-md px-3 py-2"
-      >
-        <IconSearch className="h-4 w-4 text-muted-foreground" />
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search knowledge..."
-          className="w-64 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-        />
-      </form>
-
       {/* Stats overlay */}
       <div className="absolute top-4 right-4 z-10 rounded-lg border border-border/50 bg-background/80 backdrop-blur-md px-3 py-2 text-xs text-muted-foreground">
         {data.nodes.length} nodes / {data.links.length} edges
