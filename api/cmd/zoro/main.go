@@ -47,10 +47,14 @@ func main() {
 	}
 	log.Println("Neo4j schema ensured")
 
-	searcher := service.NewSearcher()
+	searcher := service.NewSearcher(cfg.SearXNGURL)
 	orchestrator := service.NewOrchestrator(knowledge, ollamaClient, searcher)
 
-	r := router.New(cfg, orchestrator, knowledge)
+	registry := service.NewModelRegistry(cfg.OllamaModel, cfg.OllamaFastModel, cfg.EmbeddingModel)
+	toolRegistry := service.NewToolRegistry(searcher, knowledge)
+	agent := service.NewAgent(ollamaClient, toolRegistry, registry)
+
+	r := router.New(cfg, orchestrator, knowledge, agent, ollamaClient, registry)
 
 	srv := &http.Server{
 		Addr:         ":8080",

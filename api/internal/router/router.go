@@ -12,7 +12,7 @@ import (
 	"github.com/urmzd/zoro/api/internal/service"
 )
 
-func New(cfg *config.Config, orchestrator *service.Orchestrator, knowledge service.KnowledgeStore) chi.Router {
+func New(cfg *config.Config, orchestrator *service.Orchestrator, knowledge service.KnowledgeStore, agent *service.Agent, ollama *service.OllamaClient, registry *service.ModelRegistry) chi.Router {
 	r := chi.NewRouter()
 
 	r.Use(middleware.Logger)
@@ -29,6 +29,9 @@ func New(cfg *config.Config, orchestrator *service.Orchestrator, knowledge servi
 	healthHandler := handler.NewHealth()
 	researchHandler := handler.NewResearch(orchestrator)
 	knowledgeHandler := handler.NewKnowledge(knowledge)
+	chatHandler := handler.NewChat(agent)
+	intentHandler := handler.NewIntent(agent)
+	autocompleteHandler := handler.NewAutocomplete(ollama, registry)
 
 	r.Get("/swagger/*", httpSwagger.Handler(
 		httpSwagger.URL("/swagger/doc.json"),
@@ -44,6 +47,13 @@ func New(cfg *config.Config, orchestrator *service.Orchestrator, knowledge servi
 		r.Get("/knowledge/search", knowledgeHandler.Search)
 		r.Get("/knowledge/graph", knowledgeHandler.Graph)
 		r.Get("/knowledge/node/{id}", knowledgeHandler.Node)
+
+		r.Post("/intent", intentHandler.Classify)
+		r.Get("/autocomplete", autocompleteHandler.Suggest)
+
+		r.Post("/chat/sessions", chatHandler.CreateSession)
+		r.Get("/chat/sessions/{id}", chatHandler.GetSession)
+		r.Post("/chat/sessions/{id}/messages", chatHandler.SendMessage)
 	})
 
 	return r
