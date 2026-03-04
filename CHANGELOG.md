@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.0 (2026-03-04)
+
+### Features
+
+- **frontend**: add CI, Biome, Turbo, and generated API client ([93d5beb](https://github.com/urmzd/zoro/commit/93d5bebb2c0bb5648663649043433ceba34a414b))
+
+
 ## 0.1.0 (2026-03-04)
 
 ### Features
