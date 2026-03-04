@@ -1,6 +1,6 @@
 "use client";
 
-import { IconZoomIn, IconZoomOut, IconFocusCentered } from "@tabler/icons-react";
+import { IconFocusCentered, IconZoomIn, IconZoomOut } from "@tabler/icons-react";
 
 interface GraphControlsProps {
   onZoomIn: () => void;
@@ -12,6 +12,7 @@ export function GraphControls({ onZoomIn, onZoomOut, onReset }: GraphControlsPro
   return (
     <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1 rounded-lg border border-border/50 bg-background/80 backdrop-blur-md p-1">
       <button
+        type="button"
         onClick={onZoomIn}
         className="rounded-md p-2 hover:bg-muted transition-colors"
         title="Zoom in"
@@ -19,6 +20,7 @@ export function GraphControls({ onZoomIn, onZoomOut, onReset }: GraphControlsPro
         <IconZoomIn className="h-4 w-4" />
       </button>
       <button
+        type="button"
         onClick={onZoomOut}
         className="rounded-md p-2 hover:bg-muted transition-colors"
         title="Zoom out"
@@ -27,6 +29,7 @@ export function GraphControls({ onZoomIn, onZoomOut, onReset }: GraphControlsPro
       </button>
       <div className="w-px h-4 bg-border" />
       <button
+        type="button"
         onClick={onReset}
         className="rounded-md p-2 hover:bg-muted transition-colors"
         title="Fit to view"

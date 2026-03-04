@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import type { Entity, Relation, GraphData } from "@/app/lib/types";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { Entity, GraphData, Relation } from "@/app/lib/types";
 
 const ForceGraph2D = dynamic(() => import("react-force-graph-2d"), {
   ssr: false,
@@ -25,11 +25,8 @@ interface SessionSubgraphProps {
   graphData: GraphData | null;
 }
 
-export function SessionSubgraph({
-  entities,
-  relations,
-  graphData,
-}: SessionSubgraphProps) {
+export function SessionSubgraph({ entities, relations, graphData }: SessionSubgraphProps) {
+  // biome-ignore lint/suspicious/noExplicitAny: react-force-graph-2d ref type
   const fgRef = useRef<any>(null);
   const [newNodeIds, setNewNodeIds] = useState<Set<string>>(new Set());
   const prevCountRef = useRef(0);
@@ -68,6 +65,7 @@ export function SessionSubgraph({
     // Build from entities/relations if no graphData yet
     if (entities.length === 0) return { nodes: [], links: [] };
 
+    // biome-ignore lint/suspicious/noExplicitAny: graph node shape is dynamic
     const nodeMap = new Map<string, any>();
     for (const e of entities) {
       nodeMap.set(e.uuid, {
@@ -91,6 +89,7 @@ export function SessionSubgraph({
   }, [entities, relations, graphData]);
 
   const nodeCanvasObject = useCallback(
+    // biome-ignore lint/suspicious/noExplicitAny: react-force-graph-2d callback type
     (node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
       const label = node.name || node.id;
       const fontSize = 12 / globalScale;
@@ -129,8 +128,22 @@ export function SessionSubgraph({
       ctx.fillStyle = "rgba(255,255,255,0.8)";
       ctx.fillText(label, node.x, node.y + r + 2);
     },
-    [newNodeIds]
+    [newNodeIds],
   );
+
+  // biome-ignore lint/suspicious/noExplicitAny: react-force-graph-2d callback type
+  const linkCanvasObject = useCallback((link: any, ctx: CanvasRenderingContext2D) => {
+    const start = link.source;
+    const end = link.target;
+    if (!start || !end || typeof start.x !== "number") return;
+
+    ctx.beginPath();
+    ctx.moveTo(start.x, start.y);
+    ctx.lineTo(end.x, end.y);
+    ctx.strokeStyle = "rgba(99, 102, 241, 0.25)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }, []);
 
   if (data.nodes.length === 0) {
     return (
@@ -139,22 +152,6 @@ export function SessionSubgraph({
       </div>
     );
   }
-
-  const linkCanvasObject = useCallback(
-    (link: any, ctx: CanvasRenderingContext2D) => {
-      const start = link.source;
-      const end = link.target;
-      if (!start || !end || typeof start.x !== "number") return;
-
-      ctx.beginPath();
-      ctx.moveTo(start.x, start.y);
-      ctx.lineTo(end.x, end.y);
-      ctx.strokeStyle = "rgba(99, 102, 241, 0.25)";
-      ctx.lineWidth = 1;
-      ctx.stroke();
-    },
-    []
-  );
 
   return (
     <ForceGraph2D

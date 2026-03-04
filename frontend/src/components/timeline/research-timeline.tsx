@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import type { TimelineEvent, SSEEventType } from "@/app/lib/types";
+import type { SSEEventType, TimelineEvent } from "@/app/lib/types";
 
 const eventStyles: Record<SSEEventType, { color: string; label: string }> = {
   search_started: { color: "bg-blue-500", label: "Search" },
@@ -25,11 +25,7 @@ export function ResearchTimeline({ events }: ResearchTimelineProps) {
   const displayEvents = events.filter((e) => e.type !== "summary_token");
 
   if (displayEvents.length === 0) {
-    return (
-      <div className="text-sm text-muted-foreground">
-        Waiting for events...
-      </div>
-    );
+    return <div className="text-sm text-muted-foreground">Waiting for events...</div>;
   }
 
   return (
@@ -38,7 +34,7 @@ export function ResearchTimeline({ events }: ResearchTimelineProps) {
         const style = eventStyles[event.type] || eventStyles.error;
         return (
           <motion.div
-            key={idx}
+            key={`${event.type}-${event.timestamp}`}
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: idx * 0.02 }}
@@ -46,17 +42,13 @@ export function ResearchTimeline({ events }: ResearchTimelineProps) {
           >
             <div className="flex flex-col items-center shrink-0 pt-1">
               <div className={`h-2 w-2 rounded-full ${style.color}`} />
-              {idx < displayEvents.length - 1 && (
-                <div className="w-px h-full bg-border" />
-              )}
+              {idx < displayEvents.length - 1 && <div className="w-px h-full bg-border" />}
             </div>
             <div className="min-w-0 pb-2">
               <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
                 {style.label}
               </span>
-              <p className="text-xs text-foreground/80 truncate">
-                {event.message}
-              </p>
+              <p className="text-xs text-foreground/80 truncate">{event.message}</p>
             </div>
           </motion.div>
         );

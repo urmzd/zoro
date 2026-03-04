@@ -1,6 +1,6 @@
 """End-to-end pipeline tests.
 
-Tests the full flow: Go API -> Graphiti -> Neo4j
+Tests the full flow: Go API -> Neo4j
 
 Usage: python3 scripts/test_e2e.py [api_url]
 Default URL: http://localhost:8080
@@ -15,7 +15,6 @@ import urllib.error
 import time
 
 API_URL = sys.argv[1] if len(sys.argv) > 1 else "http://localhost:8080"
-GRAPHITI_URL = "http://localhost:8000"
 
 
 def post_json(url: str, data: dict) -> dict:
@@ -102,7 +101,6 @@ def test_knowledge_search():
         print(f"  PASS (got response)")
     except urllib.error.HTTPError as e:
         if e.code == 500:
-            # May fail if graphiti has no data yet — that's ok
             print(f"  SKIP (no knowledge data yet)")
         else:
             raise
@@ -128,7 +126,6 @@ def main():
 
     passed = 0
     failed = 0
-    skipped = 0
 
     # Basic tests
     for test_fn in [test_health]:

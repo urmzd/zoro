@@ -1,12 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
-import dynamic from "next/dynamic";
-import { useKnowledgeStore } from "@/lib/stores/knowledge-store";
-import { getKnowledgeGraph, getNodeDetail, searchKnowledge } from "@/app/lib/api";
-import { NodeDetailPanel } from "@/components/graph/node-detail-panel";
-import { GraphControls } from "@/components/graph/graph-controls";
 import { IconSearch } from "@tabler/icons-react";
+import dynamic from "next/dynamic";
+import { useCallback, useEffect, useRef } from "react";
+import { getKnowledgeGraph, getNodeDetail, searchKnowledge } from "@/app/lib/api";
+import { GraphControls } from "@/components/graph/graph-controls";
+import { NodeDetailPanel } from "@/components/graph/node-detail-panel";
+import { useKnowledgeStore } from "@/lib/stores/knowledge-store";
 
 const ForceGraph2D = dynamic(() => import("react-force-graph-2d"), {
   ssr: false,
@@ -24,6 +24,7 @@ const NODE_COLORS: Record<string, string> = {
 };
 
 export function KnowledgeGraph() {
+  // biome-ignore lint/suspicious/noExplicitAny: react-force-graph-2d ref has no exported type
   const fgRef = useRef<any>(null);
   const {
     graphData,
@@ -38,11 +39,7 @@ export function KnowledgeGraph() {
     highlightSubgraph,
   } = useKnowledgeStore();
 
-  useEffect(() => {
-    loadGraph();
-  }, []);
-
-  async function loadGraph() {
+  const loadGraph = useCallback(async () => {
     setLoading(true);
     try {
       const data = await getKnowledgeGraph(300);
@@ -52,7 +49,11 @@ export function KnowledgeGraph() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [setLoading, setGraphData]);
+
+  useEffect(() => {
+    loadGraph();
+  }, [loadGraph]);
 
   async function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -75,6 +76,7 @@ export function KnowledgeGraph() {
     }
   }
 
+  // biome-ignore lint/suspicious/noExplicitAny: react-force-graph-2d node type
   async function handleNodeClick(node: any) {
     try {
       const detail = await getNodeDetail(node.id);
@@ -105,12 +107,12 @@ export function KnowledgeGraph() {
     : { nodes: [], links: [] };
 
   const nodeCanvasObject = useCallback(
+    // biome-ignore lint/suspicious/noExplicitAny: react-force-graph-2d callback type
     (node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
       const label = node.name || node.id;
       const fontSize = 12 / globalScale;
       const baseColor = NODE_COLORS[node.type] || NODE_COLORS.entity;
-      const isHighlighted =
-        highlightedNodes.size === 0 || highlightedNodes.has(node.id);
+      const isHighlighted = highlightedNodes.size === 0 || highlightedNodes.has(node.id);
       const color = isHighlighted ? baseColor : "rgba(100,100,100,0.3)";
       const r = isHighlighted ? 6 : 4;
 
@@ -134,7 +136,7 @@ export function KnowledgeGraph() {
         ctx.fillText(label, node.x, node.y + r + 2);
       }
     },
-    [highlightedNodes]
+    [highlightedNodes],
   );
 
   return (
@@ -183,10 +185,7 @@ export function KnowledgeGraph() {
 
       {/* Node detail panel */}
       {selectedNode && (
-        <NodeDetailPanel
-          detail={selectedNode}
-          onClose={() => setSelectedNode(null)}
-        />
+        <NodeDetailPanel detail={selectedNode} onClose={() => setSelectedNode(null)} />
       )}
 
       {/* Graph controls */}

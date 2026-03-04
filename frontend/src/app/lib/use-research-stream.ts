@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { createResearchStream } from "./api";
 import { useResearchStore } from "@/lib/stores/research-store";
+import { createResearchStream } from "./api";
 
 export function useResearchStream(sessionId: string | null, query: string) {
   const store = useResearchStore();
@@ -25,14 +25,20 @@ export function useResearchStream(sessionId: string | null, query: string) {
     es.addEventListener("search_results", (e: MessageEvent) => {
       const data = JSON.parse(e.data);
       store.setSearchResults(Array.isArray(data) ? data : []);
-      store.addTimelineEvent("search_results", `Found ${Array.isArray(data) ? data.length : 0} results`);
+      store.addTimelineEvent(
+        "search_results",
+        `Found ${Array.isArray(data) ? data.length : 0} results`,
+      );
     });
 
     es.addEventListener("prior_knowledge", (e: MessageEvent) => {
       const data = JSON.parse(e.data);
       if (Array.isArray(data)) {
         store.setPriorFacts(data);
-        store.addTimelineEvent("prior_knowledge", `Found ${data.length} related facts from prior research`);
+        store.addTimelineEvent(
+          "prior_knowledge",
+          `Found ${data.length} related facts from prior research`,
+        );
       } else {
         store.addTimelineEvent("prior_knowledge", data.message || "Checking prior knowledge...");
       }
@@ -58,8 +64,18 @@ export function useResearchStream(sessionId: string | null, query: string) {
     es.addEventListener("graph_ready", (e: MessageEvent) => {
       const data = JSON.parse(e.data);
       if (data.facts) {
-        const nodes = new Map<string, { id: string; name: string; type: string; summary: string }>();
-        const edges: { id: string; source: string; target: string; type: string; fact: string; weight: number }[] = [];
+        const nodes = new Map<
+          string,
+          { id: string; name: string; type: string; summary: string }
+        >();
+        const edges: {
+          id: string;
+          source: string;
+          target: string;
+          type: string;
+          fact: string;
+          weight: number;
+        }[] = [];
         for (const fact of data.facts) {
           if (fact.source_node) {
             nodes.set(fact.source_node.uuid, {
@@ -125,7 +141,20 @@ export function useResearchStream(sessionId: string | null, query: string) {
       es.close();
       esRef.current = null;
     };
-  }, [sessionId, query]);
+  }, [
+    sessionId,
+    query,
+    store.addEntity,
+    store.addRelation,
+    store.addTimelineEvent,
+    store.appendSummary,
+    store.connect,
+    store.setError,
+    store.setGraphData,
+    store.setPriorFacts,
+    store.setSearchResults,
+    store.setStatus,
+  ]);
 
   return store;
 }

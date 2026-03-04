@@ -14,7 +14,7 @@ export function StreamingSummary({ content, isStreaming }: StreamingSummaryProps
     if (containerRef.current && isStreaming) {
       containerRef.current.scrollTop = containerRef.current.scrollHeight;
     }
-  }, [content, isStreaming]);
+  }, [isStreaming]);
 
   if (!content && !isStreaming) {
     return (

@@ -1,10 +1,10 @@
 "use client";
 
 import { useResearchStream } from "@/app/lib/use-research-stream";
-import { ResearchTimeline } from "@/components/timeline/research-timeline";
 import { SessionSubgraph } from "@/components/graph/session-subgraph";
 import { EntityCard } from "@/components/research/entity-card";
 import { StreamingSummary } from "@/components/research/streaming-summary";
+import { ResearchTimeline } from "@/components/timeline/research-timeline";
 
 interface ResearchViewProps {
   sessionId: string;
@@ -34,8 +34,8 @@ export function ResearchView({ sessionId, query }: ResearchViewProps) {
           <div className="rounded-lg border border-indigo-500/30 bg-indigo-500/5 p-3 shrink-0">
             <h3 className="text-sm font-medium text-indigo-400 mb-2">Prior Knowledge</h3>
             <ul className="space-y-1 text-sm text-muted-foreground">
-              {state.priorFacts.slice(0, 5).map((fact, i) => (
-                <li key={i}>{fact.fact}</li>
+              {state.priorFacts.slice(0, 5).map((fact) => (
+                <li key={fact.uuid}>{fact.fact}</li>
               ))}
             </ul>
           </div>
@@ -43,10 +43,7 @@ export function ResearchView({ sessionId, query }: ResearchViewProps) {
 
         {/* Streaming summary */}
         <div className="flex-1 overflow-y-auto min-h-0">
-          <StreamingSummary
-            content={state.summary}
-            isStreaming={state.status === "running"}
-          />
+          <StreamingSummary content={state.summary} isStreaming={state.status === "running"} />
         </div>
 
         {/* Timeline */}

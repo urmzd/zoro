@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import type { GraphData, GraphNode, GraphEdge, NodeDetail, Fact } from "@/app/lib/types";
+import type { Fact, GraphData, NodeDetail } from "@/app/lib/types";
 
 interface KnowledgeStore {
   graphData: GraphData | null;
@@ -32,6 +32,5 @@ export const useKnowledgeStore = create<KnowledgeStore>((set) => ({
   setSearchResults: (results) => set({ searchResults: results }),
   setSearchQuery: (query) => set({ searchQuery: query }),
   setLoading: (loading) => set({ isLoading: loading }),
-  highlightSubgraph: (nodeIds) =>
-    set({ highlightedNodes: new Set(nodeIds) }),
+  highlightSubgraph: (nodeIds) => set({ highlightedNodes: new Set(nodeIds) }),
 }));

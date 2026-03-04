@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -27,10 +26,11 @@ export function BackgroundBeams({ className }: { className?: string }) {
         viewBox="0 0 696 316"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
       >
         {paths.map((path, idx) => (
           <motion.path
-            key={idx}
+            key={path}
             d={path}
             stroke={`url(#grad-${idx})`}
             strokeWidth="0.5"
@@ -47,8 +47,8 @@ export function BackgroundBeams({ className }: { className?: string }) {
           />
         ))}
         <defs>
-          {paths.map((_, idx) => (
-            <linearGradient key={idx} id={`grad-${idx}`} x1="0%" y1="0%" x2="100%" y2="100%">
+          {paths.map((p, idx) => (
+            <linearGradient key={p} id={`grad-${idx}`} x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="rgb(99, 102, 241)" stopOpacity="0" />
               <stop offset="50%" stopColor="rgb(99, 102, 241)" stopOpacity="0.8" />
               <stop offset="100%" stopColor="rgb(168, 85, 247)" stopOpacity="0" />

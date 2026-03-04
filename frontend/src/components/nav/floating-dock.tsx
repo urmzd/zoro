@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@/lib/utils";
+import { IconGraph, IconHome } from "@tabler/icons-react";
+import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
-import { IconSearch, IconGraph, IconHome } from "@tabler/icons-react";
+import { useState } from "react";
+import { cn } from "@/lib/utils";
 
 interface DockItem {
   title: string;
@@ -24,7 +24,7 @@ export function FloatingDock({ className }: { className?: string }) {
     <div
       className={cn(
         "fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-full border border-border/50 bg-background/80 backdrop-blur-md px-4 py-2 shadow-lg",
-        className
+        className,
       )}
     >
       {items.map((item, idx) => (

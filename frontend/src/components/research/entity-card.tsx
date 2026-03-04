@@ -27,9 +27,7 @@ export function EntityCard({ entity }: { entity: Entity }) {
         </span>
       </div>
       {entity.summary && (
-        <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
-          {entity.summary}
-        </p>
+        <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{entity.summary}</p>
       )}
     </motion.div>
   );

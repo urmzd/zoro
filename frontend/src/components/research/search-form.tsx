@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { IconSearch } from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { startResearch } from "@/app/lib/api";
 import { HoverBorderGradient } from "@/components/ui/hover-border-gradient";
-import { IconSearch } from "@tabler/icons-react";
 
 export function SearchForm() {
   const [query, setQuery] = useState("");
@@ -26,10 +26,7 @@ export function SearchForm() {
 
   return (
     <form onSubmit={handleSubmit} className="w-full max-w-2xl mx-auto">
-      <HoverBorderGradient
-        containerClassName="w-full"
-        className="w-full px-4 py-2 gap-3"
-      >
+      <HoverBorderGradient containerClassName="w-full" className="w-full px-4 py-2 gap-3">
         <IconSearch className="h-5 w-5 text-muted-foreground shrink-0" />
         <input
           type="text"

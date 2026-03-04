@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -43,7 +44,7 @@ func (h *Research) Start(w http.ResponseWriter, r *http.Request) {
 
 	session := h.orchestrator.CreateSession(req.Query)
 
-	go h.orchestrator.Run(r.Context(), session.ID)
+	go h.orchestrator.Run(context.Background(), session.ID)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"id": session.ID})

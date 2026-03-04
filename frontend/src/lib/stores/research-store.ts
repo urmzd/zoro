@@ -2,14 +2,14 @@
 
 import { create } from "zustand";
 import type {
-  ResearchState,
-  SearchResult,
   Entity,
-  Relation,
   Fact,
   GraphData,
-  TimelineEvent,
+  Relation,
+  ResearchState,
+  SearchResult,
   SSEEventType,
+  TimelineEvent,
 } from "@/app/lib/types";
 
 interface ResearchStore extends ResearchState {
@@ -42,8 +42,7 @@ const initialState: ResearchState = {
 export const useResearchStore = create<ResearchStore>((set) => ({
   ...initialState,
 
-  connect: (query) =>
-    set({ ...initialState, status: "connecting", query }),
+  connect: (query) => set({ ...initialState, status: "connecting", query }),
 
   addTimelineEvent: (type, message) =>
     set((s) => ({
@@ -57,18 +56,15 @@ export const useResearchStore = create<ResearchStore>((set) => ({
 
   setSearchResults: (results) => set({ searchResults: results }),
 
-  addEntity: (entity) =>
-    set((s) => ({ entities: [...s.entities, entity] })),
+  addEntity: (entity) => set((s) => ({ entities: [...s.entities, entity] })),
 
-  addRelation: (relation) =>
-    set((s) => ({ relations: [...s.relations, relation] })),
+  addRelation: (relation) => set((s) => ({ relations: [...s.relations, relation] })),
 
   setPriorFacts: (facts) => set({ priorFacts: facts }),
 
   setGraphData: (data) => set({ graphData: data }),
 
-  appendSummary: (token) =>
-    set((s) => ({ summary: s.summary + token })),
+  appendSummary: (token) => set((s) => ({ summary: s.summary + token })),
 
   setError: (error) => set({ status: "error", error }),
 

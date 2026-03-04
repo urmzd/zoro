@@ -1,9 +1,9 @@
 # Default model
 autocomplete_model := "qwen3.5:4b"
 
-# Start infrastructure (Neo4j)
+# Start infrastructure (Neo4j + SearXNG)
 infra:
-    docker compose up neo4j -d
+    docker compose up neo4j searxng -d
 
 # Stop infrastructure
 infra-down:
@@ -29,7 +29,7 @@ run:
 dev:
     #!/usr/bin/env bash
     trap 'kill 0; docker compose down' EXIT
-    docker compose up neo4j -d
+    docker compose up neo4j searxng -d
     echo "Waiting for infrastructure..."
     sleep 5
     cd api && air &
@@ -67,6 +67,14 @@ bench-all:
 # Generate Swagger docs
 swagger:
     cd api && swag init -g cmd/zoro/main.go -o docs --parseDependency --parseInternal
+
+# Generate API client from OpenAPI spec
+generate:
+    oag generate
+
+# Lint and typecheck frontend
+check:
+    cd frontend && npx biome check . && npx tsc --noEmit
 
 # Run e2e tests
 test-e2e:
