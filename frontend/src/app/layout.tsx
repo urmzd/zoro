@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { FloatingDock } from "@/components/nav/floating-dock";
+import { Header } from "@/components/nav/header";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -26,8 +26,8 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <Header />
         {children}
-        <FloatingDock />
       </body>
     </html>
   );
