@@ -11,6 +11,7 @@ Thanks for your interest in contributing to Zoro. This guide covers how to set u
 - [Docker & Docker Compose](https://docs.docker.com/get-docker/)
 - [Ollama](https://ollama.ai)
 - [Just](https://github.com/casey/just)
+- [oag](https://github.com/urmzd/openapi-generator) (for API client generation)
 - Python 3 (for test scripts)
 
 ### Development Setup
@@ -24,12 +25,12 @@ cd zoro
 just dev
 ```
 
-This starts Neo4j, pulls the default LLM model, starts Ollama, and runs both the API and frontend with hot reload.
+This starts Neo4j + SearXNG, pulls the default LLM model, starts Ollama, and runs both the API and frontend with hot reload.
 
 If you prefer to run services individually:
 
 ```bash
-just infra      # Neo4j
+just infra      # Neo4j + SearXNG
 just serve      # Ollama
 just api        # Go API (hot reload via air)
 just web        # Next.js frontend (fast refresh)
@@ -38,6 +39,9 @@ just web        # Next.js frontend (fast refresh)
 ### Verifying Your Setup
 
 ```bash
+# Lint and typecheck
+just check
+
 # Run end-to-end tests
 just test-e2e
 ```
@@ -53,12 +57,13 @@ api/internal/
 └── service/     # Core business logic
     ├── orchestrator.go  # Research pipeline coordination
     ├── knowledge.go     # Neo4j knowledge store operations
-    ├── searcher.go      # Web search via headless Chrome
+    ├── searcher.go      # Web search (SearXNG / ChromeDP)
     └── ollama.go        # LLM integration
 
 frontend/src/
 ├── app/         # Next.js pages, API client, types
 ├── components/  # React components
+├── generated/   # Auto-generated API client (do not edit)
 └── lib/         # State stores and utilities
 ```
 
@@ -69,8 +74,20 @@ frontend/src/
 1. Fork the repository
 2. Create a feature branch from `main`
 3. Make your changes
-4. Run the end-to-end tests: `just test-e2e`
-5. Submit a pull request
+4. Run checks: `just check`
+5. Run the end-to-end tests: `just test-e2e`
+6. Submit a pull request
+
+### API Client Generation
+
+The frontend API client is auto-generated from `openapi.yaml` using [oag](https://github.com/urmzd/openapi-generator). Do not edit files in `frontend/src/generated/` — they will be overwritten.
+
+When you change API endpoints:
+
+1. Update the Swagger annotations in the Go handlers
+2. Regenerate Swagger docs: `just swagger`
+3. Update `openapi.yaml` to match
+4. Regenerate the client: `just generate`
 
 ### Code Conventions
 
@@ -83,6 +100,7 @@ frontend/src/
 
 **TypeScript (Frontend):**
 
+- Lint and format with [Biome](https://biomejs.dev): `npx biome check .`
 - Follow the existing Next.js App Router patterns
 - Use Zustand for client-side state
 - Place reusable components under `src/components/`
@@ -107,11 +125,12 @@ Significant changes should be proposed as an RFC in `docs/`. See `docs/rfc001-kn
 ## Testing
 
 ```bash
+just check              # Lint + typecheck
 just test-e2e           # Full pipeline test
 just bench [model]      # LLM performance benchmarking
 ```
 
-End-to-end tests validate the full pipeline: API health, research sessions, SSE streaming, and knowledge graph queries. Make sure Neo4j, Ollama, and the API are running before executing tests.
+End-to-end tests validate the full pipeline: API health, research sessions, SSE streaming, and knowledge graph queries. Make sure Neo4j, SearXNG, Ollama, and the API are running before executing tests.
 
 ## Reporting Issues
 

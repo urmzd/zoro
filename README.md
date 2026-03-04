@@ -1,14 +1,15 @@
 # Zoro
 
-AI-powered research agent with a persistent knowledge graph. Zoro searches the web, extracts entities and relationships using local LLMs, and stores everything in a Neo4j graph database — so knowledge compounds across research sessions instead of disappearing.
+Connect your ideas, privately. Zoro is a privacy-first research agent that builds a personal knowledge graph on your machine. It searches the web, extracts entities and relationships using local LLMs, and stores everything in a local Neo4j database — your data never leaves your infrastructure.
 
 ## Why
 
-Traditional research tools treat each session as a blank slate. Zoro builds a growing knowledge graph where entities, concepts, and relationships persist and connect across queries. Ask about quantum computing today, materials science tomorrow, and Zoro surfaces the connections automatically.
+Research tools either send your queries to the cloud or treat each session as a blank slate. Zoro gives you both privacy and persistence: a growing knowledge graph that runs entirely on your hardware, where entities, concepts, and relationships connect across sessions automatically.
 
 ## Features
 
-- **Web Research** — Automated Google search with headless Chrome, processing multiple results per query
+- **Privacy First** — All LLM inference runs locally via Ollama. No data leaves your machine.
+- **Web Research** — Automated search via SearXNG (self-hosted) with headless Chrome fallback
 - **Entity Extraction** — Local LLM extracts structured entities, relations, and facts from search results
 - **Persistent Knowledge Graph** — Neo4j stores all research artifacts with vector + fulltext indexes
 - **Cross-Session Discovery** — Entities deduplicated and linked across sessions via embedding similarity
@@ -20,20 +21,21 @@ Traditional research tools treat each session as a blank slate. Zoro builds a gr
 ```
 ┌─────────────┐     ┌──────────────┐     ┌─────────────────┐
 │   Frontend   │────▸│   Go API     │────▸│   Neo4j         │
-│   Next.js    │◂────│   (Chi + SSE)│◂────│   Knowledge     │
-│   React 19   │     │              │────▸│   Graph         │
-└─────────────┘     │              │     └─────────────────┘
-                    │              │────▸┌─────────────────┐
+│   Next.js    │◂────│   (Chi + SSE)│◂────│   (local)       │
+│   React 19   │     │              │     └─────────────────┘
+└─────────────┘     │              │────▸┌─────────────────┐
                     │              │◂────│   Ollama         │
-                    │              │     │   Local LLM      │
+                    │              │     │   (local LLM)    │
                     └──────────────┘     └─────────────────┘
                            │
                            ▼
                     ┌──────────────┐
-                    │ Google Search │
-                    │ (ChromeDP)   │
+                    │   SearXNG    │
+                    │  (self-hosted)│
                     └──────────────┘
 ```
+
+Everything runs on your machine. No external API keys required.
 
 ## Tech Stack
 
@@ -44,7 +46,7 @@ Traditional research tools treat each session as a blank slate. Zoro builds a gr
 | API            | Go 1.25, Chi v5, Server-Sent Events                        |
 | Database       | Neo4j 5 Community (APOC, vector + fulltext indexes)         |
 | LLM            | Ollama (Qwen 3.5:4b default, nomic-embed-text embeddings)  |
-| Web Search     | ChromeDP (headless Chrome)                                  |
+| Web Search     | SearXNG (self-hosted metasearch engine)                     |
 | Infrastructure | Docker Compose, Justfile                                    |
 
 ## Quick Start
@@ -52,7 +54,7 @@ Traditional research tools treat each session as a blank slate. Zoro builds a gr
 **Prerequisites:** Docker, Go 1.25+, Node.js 18+, [Ollama](https://ollama.ai), [Just](https://github.com/casey/just)
 
 ```bash
-# Start Neo4j
+# Start Neo4j + SearXNG
 just infra
 
 # Pull the default LLM model
@@ -88,9 +90,11 @@ The frontend is available at `http://localhost:3000` and the API at `http://loca
 │   └── src/
 │       ├── app/            # Next.js pages and API client
 │       ├── components/     # React components (graph, research, UI)
+│       ├── generated/      # Auto-generated API client (oag)
 │       └── lib/            # Stores and utilities
 ├── docs/                   # RFCs and architecture docs
 ├── scripts/                # Benchmarking and test scripts
+├── openapi.yaml            # OpenAPI 3.0 spec
 ├── docker-compose.yml
 └── justfile
 ```
@@ -123,7 +127,7 @@ All configuration is via environment variables with sensible defaults:
 ## Available Commands
 
 ```bash
-just infra          # Start Neo4j
+just infra          # Start Neo4j + SearXNG
 just infra-down     # Stop infrastructure
 just api            # Run API with hot reload
 just web            # Run frontend dev server
@@ -131,7 +135,9 @@ just run            # Run API + frontend
 just dev            # Run everything
 just pull [model]   # Download Ollama model
 just serve          # Start Ollama server
-just swagger        # Generate API docs
+just generate       # Regenerate API client from OpenAPI spec
+just check          # Lint and typecheck frontend
+just swagger        # Generate Swagger docs
 just bench [model]  # Benchmark model performance
 just test-e2e       # Run end-to-end tests
 ```
