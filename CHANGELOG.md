@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.4.0 (2026-03-07)
+
+### Features
+
+- **graph**: add relationship labels and directional arrows ([75bd31d](https://github.com/urmzd/zoro/commit/75bd31d23ca8aae6868e42893f9a6348d959c033))
+- **sidebar**: add sessions sidebar with previous message loading ([0b4bf6c](https://github.com/urmzd/zoro/commit/0b4bf6c35705234283e124c384e75165f0b82aa8))
+- **api**: add session listing types and api functions ([8e47063](https://github.com/urmzd/zoro/commit/8e47063e24767b994e02cd7ad9337625c37b0bed))
+- **chat**: render messages with streamdown markdown support ([299122d](https://github.com/urmzd/zoro/commit/299122da53aba5b8bad56defae8ff13aa1ca80d2))
+- **agent**: add session listing endpoint with improved intent classification ([5e63b91](https://github.com/urmzd/zoro/commit/5e63b91d23f10edbbae969cbe4720716c7b7e2b2))
+- **ollama**: add json schema format support to generate requests ([ff23d36](https://github.com/urmzd/zoro/commit/ff23d36fce9a4c164d82780e4d2b183f0bb64c13))
+
+### Miscellaneous
+
+- **deps**: add streamdown dependency for markdown rendering ([0bc3c80](https://github.com/urmzd/zoro/commit/0bc3c80abdf74e4b6cfeb1dbb60e3da322c48854))
+- **search**: limit search engines to google, bing, and wikipedia ([ca535bf](https://github.com/urmzd/zoro/commit/ca535bfc14d2717abbadd08a4d940ba0a5a54fd8))
+- **docker**: upgrade go runtime to 1.25 and configure fast model ([cb44947](https://github.com/urmzd/zoro/commit/cb449474e7fb48b821e2528d66f48a5bae82db98))
+
+
 ## 0.3.0 (2026-03-04)
 
 ### Features
