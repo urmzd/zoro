@@ -11,6 +11,7 @@ interface ChatStore extends ChatState {
   finalizeTurn: () => void;
   setStatus: (status: ChatState["status"]) => void;
   setError: (error: string) => void;
+  loadMessages: (messages: ChatMessage[]) => void;
   reset: () => void;
 }
 
@@ -70,6 +71,15 @@ export const useChatStore = create<ChatStore>((set) => ({
   setStatus: (status) => set({ status }),
 
   setError: (error) => set({ status: "error", error }),
+
+  loadMessages: (messages) =>
+    set({
+      messages,
+      currentAssistantContent: "",
+      currentToolCalls: [],
+      status: "idle",
+      error: null,
+    }),
 
   reset: () => set(initialState),
 }));

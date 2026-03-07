@@ -1,15 +1,33 @@
 "use client";
 
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useChatStore } from "@/lib/stores/chat-store";
-import { sendChatMessage } from "./api";
+import { getChatSession, sendChatMessage } from "./api";
 
 export function useChatStream(sessionId: string | null) {
   const store = useChatStore();
   const abortRef = useRef<AbortController | null>(null);
+  const loadedSessionRef = useRef<string | null>(null);
   // Capture stable action references via the Zustand store API
   const actionsRef = useRef(useChatStore.getState());
   actionsRef.current = useChatStore.getState();
+
+  // Load existing messages when navigating to a previous session
+  useEffect(() => {
+    if (!sessionId || loadedSessionRef.current === sessionId) return;
+    loadedSessionRef.current = sessionId;
+    actionsRef.current.reset();
+
+    getChatSession(sessionId)
+      .then((session) => {
+        if (session.messages?.length > 0) {
+          actionsRef.current.loadMessages(session.messages);
+        }
+      })
+      .catch(() => {
+        // New session or fetch failed — start fresh
+      });
+  }, [sessionId]);
 
   const send = useCallback(
     async (content: string) => {

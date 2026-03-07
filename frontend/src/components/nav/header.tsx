@@ -4,6 +4,7 @@ import { IconGraph, IconHome } from "@tabler/icons-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { SessionsSidebar } from "@/components/nav/sessions-sidebar";
 
 const navItems = [
   { label: "Home", href: "/", icon: IconHome },
@@ -46,6 +47,7 @@ export function Header() {
               </Link>
             );
           })}
+          <SessionsSidebar />
         </nav>
       </div>
     </header>
