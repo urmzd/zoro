@@ -13,6 +13,7 @@
     "check": "turbo run lint typecheck build"
   },
   "dependencies": {
+    "@streamdown/code": "^1.1.0",
     "@tabler/icons-react": "^3.38.0",
     "@xyflow/react": "^12.10.1",
     "class-variance-authority": "^0.7.1",
