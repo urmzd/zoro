@@ -23,6 +23,13 @@ type ToolCall struct {
 	Result    string `json:"result,omitempty"`
 }
 
+type ChatSessionSummary struct {
+	ID           string    `json:"id"`
+	Preview      string    `json:"preview"`
+	MessageCount int       `json:"message_count"`
+	CreatedAt    time.Time `json:"created_at"`
+}
+
 // Ollama /api/chat wire format types
 
 type OllamaChatMessage struct {

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"strings"
 	"sync"
 	"time"
 
@@ -62,6 +61,42 @@ func (a *Agent) GetSession(id string) (*model.ChatSession, bool) {
 	defer a.mu.RUnlock()
 	s, ok := a.sessions[id]
 	return s, ok
+}
+
+// ListSessions returns all sessions sorted by creation time (newest first).
+func (a *Agent) ListSessions() []model.ChatSessionSummary {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+
+	summaries := make([]model.ChatSessionSummary, 0, len(a.sessions))
+	for _, s := range a.sessions {
+		var preview string
+		for _, m := range s.Messages {
+			if m.Role == "user" {
+				preview = m.Content
+				break
+			}
+		}
+		if len(preview) > 120 {
+			preview = preview[:120] + "..."
+		}
+		summaries = append(summaries, model.ChatSessionSummary{
+			ID:           s.ID,
+			Preview:      preview,
+			MessageCount: len(s.Messages),
+			CreatedAt:    s.CreatedAt,
+		})
+	}
+
+	// Sort newest first
+	for i := 0; i < len(summaries); i++ {
+		for j := i + 1; j < len(summaries); j++ {
+			if summaries[j].CreatedAt.After(summaries[i].CreatedAt) {
+				summaries[i], summaries[j] = summaries[j], summaries[i]
+			}
+		}
+	}
+	return summaries
 }
 
 func (a *Agent) Subscribe(id string) (<-chan model.SSEEvent, bool) {
@@ -231,20 +266,36 @@ func (a *Agent) runLoop(ctx context.Context, sessionID string, tools *ToolRegist
 // ClassifyIntent uses the LLM to determine user intent from a query.
 // Returns "chat" for research/conversation or "knowledge_search" for lookups.
 func (a *Agent) ClassifyIntent(ctx context.Context, query string) (string, error) {
-	prompt := `Classify the user's intent. Reply with ONLY one word: "chat" or "knowledge_search".
+	prompt := `Classify the user's intent as "chat" or "knowledge_search".
 
-Use "knowledge_search" if the user wants to look up, recall, or find something already stored in the knowledge graph.
-Use "chat" if the user wants to research something new, have a conversation, or ask a general question.
+"knowledge_search": user wants to look up or find something stored in the knowledge graph.
+"chat": user wants to research something new, have a conversation, or ask a general question.
 
 User query: ` + query
 
-	resp, err := a.ollama.GenerateWithModel(ctx, prompt, a.registry.Model(TierFast))
+	resp, err := a.ollama.GenerateWithModel(ctx, prompt, a.registry.Model(TierFast), GenerateOptions{
+		Format: map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"action": map[string]any{
+					"type": "string",
+					"enum": []string{"chat", "knowledge_search"},
+				},
+			},
+			"required": []string{"action"},
+		},
+	})
 	if err != nil {
 		return "chat", err
 	}
 
-	cleaned := strings.TrimSpace(strings.ToLower(resp))
-	if strings.Contains(cleaned, "knowledge_search") {
+	var result struct {
+		Action string `json:"action"`
+	}
+	if err := json.Unmarshal([]byte(resp), &result); err != nil {
+		return "chat", nil
+	}
+	if result.Action == "knowledge_search" {
 		return "knowledge_search", nil
 	}
 	return "chat", nil

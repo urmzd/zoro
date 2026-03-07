@@ -22,6 +22,13 @@ type SendMessageRequest struct {
 	Content string `json:"content"`
 }
 
+// ListSessions returns all chat sessions.
+func (h *Chat) ListSessions(w http.ResponseWriter, r *http.Request) {
+	sessions := h.agent.ListSessions()
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(sessions)
+}
+
 // CreateSession creates a new chat session.
 func (h *Chat) CreateSession(w http.ResponseWriter, r *http.Request) {
 	session := h.agent.CreateSession()

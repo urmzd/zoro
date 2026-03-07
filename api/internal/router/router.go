@@ -51,6 +51,7 @@ func New(cfg *config.Config, orchestrator *service.Orchestrator, knowledge servi
 		r.Post("/intent", intentHandler.Classify)
 		r.Get("/autocomplete", autocompleteHandler.Suggest)
 
+		r.Get("/chat/sessions", chatHandler.ListSessions)
 		r.Post("/chat/sessions", chatHandler.CreateSession)
 		r.Get("/chat/sessions/{id}", chatHandler.GetSession)
 		r.Post("/chat/sessions/{id}/messages", chatHandler.SendMessage)
