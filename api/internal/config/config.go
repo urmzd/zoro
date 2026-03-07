@@ -21,7 +21,7 @@ func Load() *Config {
 		Neo4jPassword:  getEnv("NEO4J_PASSWORD", "zoro_dev_password"),
 		OllamaHost:     getEnv("OLLAMA_HOST", "http://localhost:11434"),
 		OllamaModel:     getEnv("OLLAMA_MODEL", "qwen3.5:4b"),
-		OllamaFastModel: getEnv("OLLAMA_FAST_MODEL", ""),
+		OllamaFastModel: getEnv("OLLAMA_FAST_MODEL", "qwen3.5:0.8b"),
 		EmbeddingModel:  getEnv("EMBEDDING_MODEL", "nomic-embed-text"),
 		CORSOrigins:    getEnv("CORS_ORIGINS", "http://localhost:3000"),
 		SearXNGURL:     getEnv("SEARXNG_URL", "http://localhost:8888"),

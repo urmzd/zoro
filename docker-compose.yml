@@ -42,7 +42,7 @@ services:
       NEO4J_PASSWORD: zoro_dev_password
       OLLAMA_HOST: http://host.docker.internal:11434
       OLLAMA_MODEL: qwen3.5:4b
-      OLLAMA_FAST_MODEL: ""
+      OLLAMA_FAST_MODEL: qwen3.5:0.8b
       EMBEDDING_MODEL: nomic-embed-text
       CORS_ORIGINS: http://localhost:3000
       SEARXNG_URL: http://searxng:8080
