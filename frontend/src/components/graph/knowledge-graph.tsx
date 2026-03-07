@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getKnowledgeGraph, getNodeDetail } from "@/app/lib/api";
 import { GraphControls } from "@/components/graph/graph-controls";
 import { NodeDetailPanel } from "@/components/graph/node-detail-panel";
@@ -35,6 +35,8 @@ export function KnowledgeGraph() {
     setLoading,
   } = useKnowledgeStore();
 
+  const hasFetched = useRef(false);
+
   const loadGraph = useCallback(async () => {
     setLoading(true);
     try {
@@ -48,6 +50,8 @@ export function KnowledgeGraph() {
   }, [setLoading, setGraphData]);
 
   useEffect(() => {
+    if (hasFetched.current) return;
+    hasFetched.current = true;
     loadGraph();
   }, [loadGraph]);
 
@@ -137,6 +141,27 @@ export function KnowledgeGraph() {
           nodeCanvasObject={nodeCanvasObject}
           linkColor={() => "rgba(99, 102, 241, 0.2)"}
           linkWidth={1}
+          linkDirectionalArrowLength={4}
+          linkDirectionalArrowRelPos={1}
+          linkDirectionalArrowColor={() => "rgba(99, 102, 241, 0.4)"}
+          linkCanvasObjectMode={() => "after"}
+          linkCanvasObject={(link: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
+            const source = link.source as any;
+            const target = link.target as any;
+            if (!source?.x || !target?.x) return;
+            const label = link.type || "";
+            if (!label) return;
+
+            const midX = (source.x + target.x) / 2;
+            const midY = (source.y + target.y) / 2;
+            const fontSize = Math.max(10 / globalScale, 1);
+
+            ctx.font = `${fontSize}px sans-serif`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillStyle = "rgba(180, 180, 200, 0.6)";
+            ctx.fillText(label, midX, midY);
+          }}
           backgroundColor="transparent"
           onNodeClick={handleNodeClick}
           cooldownTicks={200}
