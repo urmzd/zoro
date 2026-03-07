@@ -33,9 +33,11 @@ func NewOllamaClient(host, model, embeddingModel string) *OllamaClient {
 }
 
 type ollamaGenerateRequest struct {
-	Model  string `json:"model"`
-	Prompt string `json:"prompt"`
-	Stream bool   `json:"stream"`
+	Model   string         `json:"model"`
+	Prompt  string         `json:"prompt"`
+	Stream  bool           `json:"stream"`
+	Format  map[string]any `json:"format,omitempty"`
+	Options map[string]any `json:"options,omitempty"`
 }
 
 type ollamaGenerateResponse struct {
@@ -74,11 +76,20 @@ func (c *OllamaClient) Generate(ctx context.Context, prompt string) (string, err
 	return c.GenerateWithModel(ctx, prompt, c.model)
 }
 
-func (c *OllamaClient) GenerateWithModel(ctx context.Context, prompt string, model string) (string, error) {
+type GenerateOptions struct {
+	Format  map[string]any
+	Options map[string]any
+}
+
+func (c *OllamaClient) GenerateWithModel(ctx context.Context, prompt string, model string, opts ...GenerateOptions) (string, error) {
 	req := ollamaGenerateRequest{
 		Model:  model,
 		Prompt: prompt,
 		Stream: false,
+	}
+	if len(opts) > 0 {
+		req.Format = opts[0].Format
+		req.Options = opts[0].Options
 	}
 	body, err := json.Marshal(req)
 	if err != nil {
