@@ -1,5 +1,5 @@
 import { ApiClient } from "@/generated/api";
-import type { GraphData, NodeDetail } from "./types";
+import type { ChatSessionSummary, GraphData, NodeDetail } from "./types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
@@ -61,6 +61,12 @@ export async function getAutocompleteSuggestions(
 }
 
 // Chat API functions
+
+export async function listChatSessions(): Promise<ChatSessionSummary[]> {
+  const resp = await fetch(`${API_BASE}/api/chat/sessions`);
+  if (!resp.ok) return [];
+  return resp.json();
+}
 
 export async function createChatSession(): Promise<{ id: string }> {
   const resp = await fetch(`${API_BASE}/api/chat/sessions`, {

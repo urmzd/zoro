@@ -126,6 +126,13 @@ export interface ChatSession {
   created_at: string;
 }
 
+export interface ChatSessionSummary {
+  id: string;
+  preview: string;
+  message_count: number;
+  created_at: string;
+}
+
 export interface ChatState {
   messages: ChatMessage[];
   currentAssistantContent: string;
