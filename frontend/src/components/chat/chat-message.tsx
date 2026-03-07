@@ -2,11 +2,16 @@
 
 import { cn } from "@/lib/utils";
 import type { ChatMessage as ChatMessageType } from "@/app/lib/types";
+import { Streamdown } from "streamdown";
+import { code } from "@streamdown/code";
 import { ToolCallCard } from "./tool-call-card";
 
 interface ChatMessageProps {
   message: ChatMessageType;
 }
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const plugins = { code } as any;
 
 export function ChatMessage({ message }: ChatMessageProps) {
   const isUser = message.role === "user";
@@ -27,9 +32,13 @@ export function ChatMessage({ message }: ChatMessageProps) {
         ))}
 
         {message.content && (
-          <div className="prose prose-invert prose-sm max-w-none whitespace-pre-wrap">
-            {message.content}
-          </div>
+          isUser ? (
+            <div className="whitespace-pre-wrap">{message.content}</div>
+          ) : (
+            <Streamdown mode="static" plugins={plugins}>
+              {message.content}
+            </Streamdown>
+          )
         )}
       </div>
     </div>

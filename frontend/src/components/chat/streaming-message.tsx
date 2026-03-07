@@ -1,12 +1,17 @@
 "use client";
 
 import type { ToolCall } from "@/app/lib/types";
+import { Streamdown } from "streamdown";
+import { code } from "@streamdown/code";
 import { ToolCallCard } from "./tool-call-card";
 
 interface StreamingMessageProps {
   content: string;
   toolCalls: ToolCall[];
 }
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const plugins = { code } as any;
 
 export function StreamingMessage({ content, toolCalls }: StreamingMessageProps) {
   const hasContent = content || toolCalls.length > 0;
@@ -32,10 +37,9 @@ export function StreamingMessage({ content, toolCalls }: StreamingMessageProps) 
         ))}
 
         {content && (
-          <div className="prose prose-invert prose-sm max-w-none whitespace-pre-wrap">
+          <Streamdown plugins={plugins} caret="block" isAnimating>
             {content}
-            <span className="inline-block h-4 w-0.5 bg-indigo-400 animate-pulse ml-0.5" />
-          </div>
+          </Streamdown>
         )}
       </div>
     </div>
