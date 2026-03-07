@@ -1,4 +1,9 @@
-use_default_settings: true
+use_default_settings:
+  engines:
+    keep_only:
+      - google
+      - bing
+      - wikipedia
 
 server:
   secret_key: "zoro-dev-searxng-secret"
@@ -22,7 +27,7 @@ engines:
     shortcut: b
     disabled: false
 
-  - name: duckduckgo
-    engine: duckduckgo
-    shortcut: ddg
+  - name: wikipedia
+    engine: wikipedia
+    shortcut: wp
     disabled: false

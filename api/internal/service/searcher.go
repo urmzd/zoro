@@ -37,7 +37,7 @@ type searxngResult struct {
 }
 
 func (s *Searcher) Search(ctx context.Context, query string) ([]model.SearchResult, error) {
-	u := fmt.Sprintf("%s/search?q=%s&format=json&engines=google,bing,duckduckgo",
+	u := fmt.Sprintf("%s/search?q=%s&format=json&engines=google,bing",
 		s.baseURL, url.QueryEscape(query))
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
