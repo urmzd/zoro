@@ -1,7 +1,0 @@
-branches:
-  - main
-
-tag_prefix: "v"
-
-changelog:
-  file: CHANGELOG.md
