@@ -3,8 +3,8 @@
 import { IconGraph, IconHome } from "@tabler/icons-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { cn } from "@/lib/utils";
 import { SessionsSidebar } from "@/components/nav/sessions-sidebar";
+import { cn } from "@/lib/utils";
 
 const navItems = [
   { label: "Home", href: "/", icon: IconHome },

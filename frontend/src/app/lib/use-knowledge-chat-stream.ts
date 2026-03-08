@@ -1,9 +1,15 @@
 "use client";
 
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
+import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { useKnowledgeChatStore } from "@/lib/stores/knowledge-chat-store";
 import { createChatSession, sendChatMessage } from "./api";
 import { processEvent, type StoreActions } from "./use-chat-stream";
+
+interface SSEEvent {
+  type: string;
+  data: unknown;
+}
 
 interface UseKnowledgeChatStreamOptions {
   onToolCallResult?: (name: string, result: string) => void;
@@ -13,11 +19,21 @@ export function useKnowledgeChatStream(
   options: UseKnowledgeChatStreamOptions = {},
 ) {
   const store = useKnowledgeChatStore();
-  const abortRef = useRef<AbortController | null>(null);
+  const unlistenRef = useRef<UnlistenFn | null>(null);
   const actionsRef = useRef(useKnowledgeChatStore.getState());
   actionsRef.current = useKnowledgeChatStore.getState();
   const optionsRef = useRef(options);
   optionsRef.current = options;
+
+  // Cleanup listener on unmount
+  useEffect(() => {
+    return () => {
+      if (unlistenRef.current) {
+        unlistenRef.current();
+        unlistenRef.current = null;
+      }
+    };
+  }, []);
 
   const send = useCallback(async (content: string) => {
     if (!content.trim()) return;
@@ -39,8 +55,11 @@ export function useKnowledgeChatStream(
 
     actions.addUserMessage(content);
 
-    const controller = new AbortController();
-    abortRef.current = controller;
+    // Cleanup previous listener
+    if (unlistenRef.current) {
+      unlistenRef.current();
+      unlistenRef.current = null;
+    }
 
     // Wrap store actions to intercept tool_call_result for the callback
     const wrappedActions: StoreActions = {
@@ -48,7 +67,6 @@ export function useKnowledgeChatStream(
       addToolCallStart: actions.addToolCallStart,
       setToolCallResult: (id: string, result: string) => {
         actions.setToolCallResult(id, result);
-        // Find the tool call to get the name
         const current = useKnowledgeChatStore.getState().currentToolCalls;
         const tc = current.find((t) => t.id === id);
         if (tc && optionsRef.current.onToolCallResult) {
@@ -59,85 +77,30 @@ export function useKnowledgeChatStream(
       setError: actions.setError,
     };
 
+    // Listen for Tauri events
+    const eventName = `chat-event:${sid}`;
+    unlistenRef.current = await listen<SSEEvent>(eventName, (event) => {
+      processEvent(
+        event.payload.type,
+        JSON.stringify(event.payload.data),
+        wrappedActions,
+      );
+    });
+
     try {
-      const resp = await sendChatMessage(sid, content);
-      if (!resp.ok || !resp.body) {
-        actions.setError("Failed to send message");
-        return;
-      }
-
-      const reader = resp.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        if (controller.signal.aborted) {
-          reader.cancel();
-          break;
-        }
-
-        buffer += decoder.decode(value, { stream: true });
-
-        let idx: number;
-        while ((idx = buffer.indexOf("\n\n")) !== -1) {
-          const block = buffer.slice(0, idx);
-          buffer = buffer.slice(idx + 2);
-
-          let eventType = "";
-          let dataStr = "";
-
-          for (const line of block.split("\n")) {
-            if (line.startsWith("event: ")) {
-              eventType = line.slice(7).trim();
-            } else if (line.startsWith("data: ")) {
-              dataStr = line.slice(6);
-            }
-          }
-
-          if (eventType && dataStr !== undefined) {
-            try {
-              processEvent(eventType, dataStr, wrappedActions);
-            } catch {
-              // ignore parse errors
-            }
-          }
-        }
-      }
-
-      // Process remaining buffer
-      if (buffer.trim()) {
-        let eventType = "";
-        let dataStr = "";
-        for (const line of buffer.split("\n")) {
-          if (line.startsWith("event: ")) {
-            eventType = line.slice(7).trim();
-          } else if (line.startsWith("data: ")) {
-            dataStr = line.slice(6);
-          }
-        }
-        if (eventType) {
-          try {
-            processEvent(eventType, dataStr, wrappedActions);
-          } catch {
-            // ignore
-          }
-        }
-      }
+      await sendChatMessage(sid, content);
     } catch (err) {
-      if (!controller.signal.aborted) {
-        actionsRef.current.setError(
-          err instanceof Error ? err.message : "Connection error",
-        );
-      }
-    } finally {
-      abortRef.current = null;
+      actionsRef.current.setError(
+        err instanceof Error ? err.message : "Connection error",
+      );
     }
   }, []);
 
   const stop = useCallback(() => {
-    abortRef.current?.abort();
+    if (unlistenRef.current) {
+      unlistenRef.current();
+      unlistenRef.current = null;
+    }
     actionsRef.current.finalizeTurn();
   }, []);
 

@@ -12,19 +12,14 @@ interface KnowledgeResultsProps {
   loading: boolean;
 }
 
-export function KnowledgeResults({
-  results,
-  searched,
-  loading,
-}: KnowledgeResultsProps) {
+export function KnowledgeResults({ results, searched, loading }: KnowledgeResultsProps) {
   if (!searched || loading) return null;
 
   return (
     <div className="space-y-2 w-full">
       {results.length === 0 ? (
         <p className="text-center text-sm text-muted-foreground py-4">
-          No results found. Try a different query or build knowledge through
-          chat first.
+          No results found. Try a different query or build knowledge through chat first.
         </p>
       ) : (
         <div className="space-y-2 max-h-[40vh] overflow-y-auto">
@@ -41,9 +36,7 @@ export function KnowledgeResults({
                     </span>
                   )}
                   {fact.source_node?.name && fact.target_node?.name && (
-                    <span className="text-muted-foreground text-xs">
-                      &rarr;
-                    </span>
+                    <span className="text-muted-foreground text-xs">&rarr;</span>
                   )}
                   {fact.target_node?.name && (
                     <span className="rounded-full bg-purple-600/20 px-2 py-0.5 text-xs font-medium text-purple-400">

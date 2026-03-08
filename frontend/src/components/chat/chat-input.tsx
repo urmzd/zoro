@@ -1,6 +1,6 @@
 "use client";
 
-import { IconSend, IconPlayerStop } from "@tabler/icons-react";
+import { IconPlayerStop, IconSend } from "@tabler/icons-react";
 import { useRef, useState } from "react";
 
 interface ChatInputProps {
@@ -11,7 +11,13 @@ interface ChatInputProps {
   placeholder?: string;
 }
 
-export function ChatInput({ onSend, onStop, isStreaming, disabled, placeholder = "Send a message..." }: ChatInputProps) {
+export function ChatInput({
+  onSend,
+  onStop,
+  isStreaming,
+  disabled,
+  placeholder = "Send a message...",
+}: ChatInputProps) {
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 

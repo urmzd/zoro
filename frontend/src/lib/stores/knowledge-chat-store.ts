@@ -51,9 +51,7 @@ export const useKnowledgeChatStore = create<KnowledgeChatStore>((set) => ({
 
   setToolCallResult: (id, result) =>
     set((s) => ({
-      currentToolCalls: s.currentToolCalls.map((tc) =>
-        tc.id === id ? { ...tc, result } : tc,
-      ),
+      currentToolCalls: s.currentToolCalls.map((tc) => (tc.id === id ? { ...tc, result } : tc)),
     })),
 
   finalizeTurn: () =>
@@ -61,8 +59,7 @@ export const useKnowledgeChatStore = create<KnowledgeChatStore>((set) => ({
       const assistantMsg: ChatMessage = {
         role: "assistant",
         content: s.currentAssistantContent,
-        toolCalls:
-          s.currentToolCalls.length > 0 ? s.currentToolCalls : undefined,
+        toolCalls: s.currentToolCalls.length > 0 ? s.currentToolCalls : undefined,
       };
       return {
         messages: [...s.messages, assistantMsg],

@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { IconHistory, IconMessageCircle, IconX } from "@tabler/icons-react";
 import { usePathname, useRouter } from "next/navigation";
-import { IconHistory, IconX, IconMessageCircle } from "@tabler/icons-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { listChatSessions } from "@/app/lib/api";
-import type { ChatSessionSummary } from "@/app/lib/types";
+import type { ChatSessionSummary } from "@/app/lib/api";
 import { cn } from "@/lib/utils";
 
 export function SessionsSidebar() {
@@ -46,9 +46,7 @@ export function SessionsSidebar() {
     setOpen(false);
   }
 
-  const activeId = pathname.startsWith("/chat/")
-    ? pathname.split("/")[2]
-    : null;
+  const activeId = pathname.startsWith("/chat/") ? pathname.split("/")[2] : null;
 
   return (
     <>
@@ -69,10 +67,11 @@ export function SessionsSidebar() {
       {open && (
         <>
           {/* Backdrop */}
+          {/* biome-ignore lint/a11y/noStaticElementInteractions: backdrop dismiss */}
           <div
+            role="presentation"
             className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm"
             onClick={() => setOpen(false)}
-            onKeyDown={() => {}}
           />
 
           {/* Panel */}
@@ -103,7 +102,7 @@ export function SessionsSidebar() {
                     <button
                       key={s.id}
                       type="button"
-                      onClick={() => handleSelect(s.id)}
+                      onClick={() => handleSelect(s.id ?? "")}
                       className={cn(
                         "w-full text-left px-4 py-3 transition-colors hover:bg-muted/50 border-b border-border/30",
                         activeId === s.id && "bg-muted/70",
@@ -118,7 +117,7 @@ export function SessionsSidebar() {
                           <p className="text-xs text-muted-foreground mt-0.5">
                             {s.message_count} messages
                             {" \u00b7 "}
-                            {formatRelativeTime(s.created_at)}
+                            {formatRelativeTime(s.created_at ?? "")}
                           </p>
                         </div>
                       </div>

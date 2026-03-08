@@ -1,14 +1,26 @@
 "use client";
 
-import { IconChevronDown, IconSearch, IconBrain, IconDatabase } from "@tabler/icons-react";
+import { IconBrain, IconChevronDown, IconDatabase, IconSearch } from "@tabler/icons-react";
 import { useState } from "react";
-import { cn } from "@/lib/utils";
 import type { ToolCall } from "@/app/lib/types";
+import { cn } from "@/lib/utils";
 
 const TOOL_CONFIG: Record<string, { icon: typeof IconSearch; color: string; label: string }> = {
-  web_search: { icon: IconSearch, color: "text-blue-400 bg-blue-500/10 border-blue-500/20", label: "Web Search" },
-  search_knowledge: { icon: IconBrain, color: "text-purple-400 bg-purple-500/10 border-purple-500/20", label: "Knowledge Search" },
-  store_knowledge: { icon: IconDatabase, color: "text-green-400 bg-green-500/10 border-green-500/20", label: "Store Knowledge" },
+  web_search: {
+    icon: IconSearch,
+    color: "text-blue-400 bg-blue-500/10 border-blue-500/20",
+    label: "Web Search",
+  },
+  search_knowledge: {
+    icon: IconBrain,
+    color: "text-purple-400 bg-purple-500/10 border-purple-500/20",
+    label: "Knowledge Search",
+  },
+  store_knowledge: {
+    icon: IconDatabase,
+    color: "text-green-400 bg-green-500/10 border-green-500/20",
+    label: "Store Knowledge",
+  },
 };
 
 interface ToolCallCardProps {
@@ -40,17 +52,12 @@ export function ToolCallCard({ toolCall }: ToolCallCardProps) {
       >
         <Icon className="h-4 w-4 shrink-0" />
         <span className="font-medium">{config.label}</span>
-        <span className="truncate text-xs opacity-70 flex-1 text-left">
-          {preview}
-        </span>
+        <span className="truncate text-xs opacity-70 flex-1 text-left">{preview}</span>
         {isLoading && (
           <span className="h-3 w-3 rounded-full border-2 border-current border-t-transparent animate-spin shrink-0" />
         )}
         <IconChevronDown
-          className={cn(
-            "h-3.5 w-3.5 shrink-0 transition-transform",
-            expanded && "rotate-180",
-          )}
+          className={cn("h-3.5 w-3.5 shrink-0 transition-transform", expanded && "rotate-180")}
         />
       </button>
       {expanded && (

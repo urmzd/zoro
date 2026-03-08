@@ -1,8 +1,8 @@
 "use client";
 
-import type { ToolCall } from "@/app/lib/types";
-import { Streamdown } from "streamdown";
 import { code } from "@streamdown/code";
+import { Streamdown } from "streamdown";
+import type { ToolCall } from "@/app/lib/types";
 import { ToolCallCard } from "./tool-call-card";
 
 interface StreamingMessageProps {

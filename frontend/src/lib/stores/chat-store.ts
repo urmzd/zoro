@@ -47,9 +47,7 @@ export const useChatStore = create<ChatStore>((set) => ({
 
   setToolCallResult: (id, result) =>
     set((s) => ({
-      currentToolCalls: s.currentToolCalls.map((tc) =>
-        tc.id === id ? { ...tc, result } : tc,
-      ),
+      currentToolCalls: s.currentToolCalls.map((tc) => (tc.id === id ? { ...tc, result } : tc)),
     })),
 
   finalizeTurn: () =>
@@ -57,8 +55,7 @@ export const useChatStore = create<ChatStore>((set) => ({
       const assistantMsg: ChatMessage = {
         role: "assistant",
         content: s.currentAssistantContent,
-        toolCalls:
-          s.currentToolCalls.length > 0 ? s.currentToolCalls : undefined,
+        toolCalls: s.currentToolCalls.length > 0 ? s.currentToolCalls : undefined,
       };
       return {
         messages: [...s.messages, assistantMsg],

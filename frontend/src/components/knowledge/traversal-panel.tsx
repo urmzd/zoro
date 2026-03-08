@@ -47,10 +47,7 @@ export function TraversalPanel({
             ))}
 
             {isStreaming && (
-              <StreamingMessage
-                content={currentAssistantContent}
-                toolCalls={currentToolCalls}
-              />
+              <StreamingMessage content={currentAssistantContent} toolCalls={currentToolCalls} />
             )}
 
             {error && (

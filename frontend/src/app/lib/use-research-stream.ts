@@ -1,145 +1,153 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { useResearchStore } from "@/lib/stores/research-store";
-import { createResearchStream } from "./api";
+
+interface SSEEvent {
+  type: string;
+  data: unknown;
+}
 
 export function useResearchStream(sessionId: string | null, query: string) {
   const store = useResearchStore();
-  const esRef = useRef<EventSource | null>(null);
+  const unlistenRef = useRef<UnlistenFn | null>(null);
 
   useEffect(() => {
     if (!sessionId) return;
 
     store.connect(query);
 
-    const es = createResearchStream(sessionId);
-    esRef.current = es;
+    const eventName = `research-event:${sessionId}`;
 
-    es.addEventListener("search_started", (e: MessageEvent) => {
-      const data = JSON.parse(e.data);
-      store.setStatus("running");
-      store.addTimelineEvent("search_started", data.query || "Searching...");
-    });
+    let unlisten: UnlistenFn | null = null;
 
-    es.addEventListener("search_results", (e: MessageEvent) => {
-      const data = JSON.parse(e.data);
-      store.setSearchResults(Array.isArray(data) ? data : []);
-      store.addTimelineEvent(
-        "search_results",
-        `Found ${Array.isArray(data) ? data.length : 0} results`,
-      );
-    });
+    listen<SSEEvent>(eventName, (event) => {
+      const { type, data } = event.payload;
+      // biome-ignore lint: data can be any shape from the backend
+      const d = data as any;
 
-    es.addEventListener("prior_knowledge", (e: MessageEvent) => {
-      const data = JSON.parse(e.data);
-      if (Array.isArray(data)) {
-        store.setPriorFacts(data);
-        store.addTimelineEvent(
-          "prior_knowledge",
-          `Found ${data.length} related facts from prior research`,
-        );
-      } else {
-        store.addTimelineEvent("prior_knowledge", data.message || "Checking prior knowledge...");
-      }
-    });
+      switch (type) {
+        case "search_started":
+          store.setStatus("running");
+          store.addTimelineEvent(
+            "search_started",
+            d?.query || "Searching...",
+          );
+          break;
 
-    es.addEventListener("episode_ingested", (e: MessageEvent) => {
-      const data = JSON.parse(e.data);
-      store.addTimelineEvent("episode_ingested", `Ingested result ${(data.result_index ?? 0) + 1}`);
-    });
+        case "search_results":
+          store.setSearchResults(Array.isArray(d) ? d : []);
+          store.addTimelineEvent(
+            "search_results",
+            `Found ${Array.isArray(d) ? d.length : 0} results`,
+          );
+          break;
 
-    es.addEventListener("entity_discovered", (e: MessageEvent) => {
-      const data = JSON.parse(e.data);
-      store.addEntity(data);
-      store.addTimelineEvent("entity_discovered", `Discovered: ${data.name}`);
-    });
+        case "prior_knowledge":
+          if (Array.isArray(d)) {
+            store.setPriorFacts(d);
+            store.addTimelineEvent(
+              "prior_knowledge",
+              `Found ${d.length} related facts from prior research`,
+            );
+          } else {
+            store.addTimelineEvent(
+              "prior_knowledge",
+              d?.message || "Checking prior knowledge...",
+            );
+          }
+          break;
 
-    es.addEventListener("relation_found", (e: MessageEvent) => {
-      const data = JSON.parse(e.data);
-      store.addRelation(data);
-      store.addTimelineEvent("relation_found", `Relation: ${data.type}`);
-    });
+        case "episode_ingested":
+          store.addTimelineEvent(
+            "episode_ingested",
+            `Ingested result ${(d?.result_index ?? 0) + 1}`,
+          );
+          break;
 
-    es.addEventListener("graph_ready", (e: MessageEvent) => {
-      const data = JSON.parse(e.data);
-      if (data.facts) {
-        const nodes = new Map<
-          string,
-          { id: string; name: string; type: string; summary: string }
-        >();
-        const edges: {
-          id: string;
-          source: string;
-          target: string;
-          type: string;
-          fact: string;
-          weight: number;
-        }[] = [];
-        for (const fact of data.facts) {
-          if (fact.source_node) {
-            nodes.set(fact.source_node.uuid, {
-              id: fact.source_node.uuid,
-              name: fact.source_node.name,
-              type: fact.source_node.type || "entity",
-              summary: fact.source_node.summary || "",
+        case "entity_discovered":
+          store.addEntity(d);
+          store.addTimelineEvent("entity_discovered", `Discovered: ${d?.name}`);
+          break;
+
+        case "relation_found":
+          store.addRelation(d);
+          store.addTimelineEvent("relation_found", `Relation: ${d?.type}`);
+          break;
+
+        case "graph_ready":
+          if (d?.facts) {
+            const nodes = new Map<
+              string,
+              { id: string; name: string; type: string; summary: string }
+            >();
+            const edges: {
+              id: string;
+              source: string;
+              target: string;
+              type: string;
+              fact: string;
+              weight: number;
+            }[] = [];
+            for (const fact of d.facts) {
+              if (fact.source_node) {
+                nodes.set(fact.source_node.uuid, {
+                  id: fact.source_node.uuid,
+                  name: fact.source_node.name,
+                  type: fact.source_node.type || "entity",
+                  summary: fact.source_node.summary || "",
+                });
+              }
+              if (fact.target_node) {
+                nodes.set(fact.target_node.uuid, {
+                  id: fact.target_node.uuid,
+                  name: fact.target_node.name,
+                  type: fact.target_node.type || "entity",
+                  summary: fact.target_node.summary || "",
+                });
+              }
+              edges.push({
+                id: fact.uuid,
+                source: fact.source_node?.uuid,
+                target: fact.target_node?.uuid,
+                type: fact.name,
+                fact: fact.fact,
+                weight: 1,
+              });
+            }
+            store.setGraphData({
+              nodes: Array.from(nodes.values()),
+              edges,
             });
           }
-          if (fact.target_node) {
-            nodes.set(fact.target_node.uuid, {
-              id: fact.target_node.uuid,
-              name: fact.target_node.name,
-              type: fact.target_node.type || "entity",
-              summary: fact.target_node.summary || "",
-            });
-          }
-          edges.push({
-            id: fact.uuid,
-            source: fact.source_node?.uuid,
-            target: fact.target_node?.uuid,
-            type: fact.name,
-            fact: fact.fact,
-            weight: 1,
-          });
-        }
-        store.setGraphData({
-          nodes: Array.from(nodes.values()),
-          edges,
-        });
+          store.addTimelineEvent("graph_ready", "Knowledge graph ready");
+          break;
+
+        case "summary_token":
+          store.appendSummary(d?.token || "");
+          break;
+
+        case "research_complete":
+          store.setStatus("complete");
+          store.addTimelineEvent("research_complete", "Research complete");
+          break;
+
+        case "error":
+          store.setError(d?.error || "Unknown error");
+          break;
       }
-      store.addTimelineEvent("graph_ready", "Knowledge graph ready");
+    }).then((fn) => {
+      unlisten = fn;
+      unlistenRef.current = fn;
     });
-
-    es.addEventListener("summary_token", (e: MessageEvent) => {
-      const data = JSON.parse(e.data);
-      store.appendSummary(data.token || "");
-    });
-
-    es.addEventListener("research_complete", () => {
-      store.setStatus("complete");
-      store.addTimelineEvent("research_complete", "Research complete");
-      es.close();
-    });
-
-    es.addEventListener("error", (e: MessageEvent) => {
-      try {
-        const data = JSON.parse(e.data);
-        store.setError(data.error || "Unknown error");
-      } catch {
-        store.setError("Connection error");
-      }
-      es.close();
-    });
-
-    es.onerror = () => {
-      if (es.readyState === EventSource.CLOSED) return;
-      store.setError("Connection lost");
-      es.close();
-    };
 
     return () => {
-      es.close();
-      esRef.current = null;
+      if (unlisten) unlisten();
+      if (unlistenRef.current) {
+        unlistenRef.current();
+        unlistenRef.current = null;
+      }
     };
   }, [
     sessionId,

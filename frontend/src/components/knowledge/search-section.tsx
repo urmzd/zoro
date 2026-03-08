@@ -1,6 +1,6 @@
 "use client";
 
-import { IconSearch, IconLoader2 } from "@tabler/icons-react";
+import { IconLoader2, IconSearch } from "@tabler/icons-react";
 import { useState } from "react";
 
 interface SearchSectionProps {
@@ -20,9 +20,7 @@ export function SearchSection({ onSearch, isStreaming }: SearchSectionProps) {
   return (
     <section className="border-b border-border/50 bg-background/60 backdrop-blur-sm px-4 py-5">
       <div className="mx-auto max-w-4xl space-y-3">
-        <h2 className="text-lg font-semibold tracking-tight text-foreground">
-          Explore Knowledge
-        </h2>
+        <h2 className="text-lg font-semibold tracking-tight text-foreground">Explore Knowledge</h2>
         <form onSubmit={handleSubmit} className="flex items-center gap-3">
           <div className="flex flex-1 items-center gap-3 rounded-2xl border border-border bg-background/80 backdrop-blur-sm px-4 py-3">
             {isStreaming ? (

@@ -2,9 +2,9 @@
 
 import { IconGraph, IconX } from "@tabler/icons-react";
 import { useCallback, useEffect, useState } from "react";
-import { SessionSubgraph } from "@/components/graph/session-subgraph";
 import { getKnowledgeGraph } from "@/app/lib/api";
 import type { GraphData } from "@/app/lib/types";
+import { SessionSubgraph } from "@/components/graph/session-subgraph";
 
 interface GraphSidePanelProps {
   sessionId: string;
@@ -55,11 +55,7 @@ export function GraphSidePanel({ sessionId }: GraphSidePanelProps) {
         </button>
       </div>
       <div className="flex-1 min-h-0">
-        <SessionSubgraph
-          entities={[]}
-          relations={[]}
-          graphData={graphData}
-        />
+        <SessionSubgraph entities={[]} relations={[]} graphData={graphData} />
       </div>
     </div>
   );

@@ -44,15 +44,8 @@ export default function KnowledgePage() {
     [knowledgeStore],
   );
 
-  const {
-    messages,
-    currentAssistantContent,
-    currentToolCalls,
-    status,
-    error,
-    send,
-    stop,
-  } = useKnowledgeChatStream({ onToolCallResult: handleToolCallResult });
+  const { messages, currentAssistantContent, currentToolCalls, status, error, send, stop } =
+    useKnowledgeChatStream({ onToolCallResult: handleToolCallResult });
 
   const isStreaming = status === "streaming";
 

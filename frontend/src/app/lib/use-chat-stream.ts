@@ -1,14 +1,19 @@
 "use client";
 
 import { useCallback, useEffect, useRef } from "react";
+import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { useChatStore } from "@/lib/stores/chat-store";
 import { getChatSession, sendChatMessage } from "./api";
 
+interface SSEEvent {
+  type: string;
+  data: unknown;
+}
+
 export function useChatStream(sessionId: string | null) {
   const store = useChatStore();
-  const abortRef = useRef<AbortController | null>(null);
+  const unlistenRef = useRef<UnlistenFn | null>(null);
   const loadedSessionRef = useRef<string | null>(null);
-  // Capture stable action references via the Zustand store API
   const actionsRef = useRef(useChatStore.getState());
   actionsRef.current = useChatStore.getState();
 
@@ -20,14 +25,34 @@ export function useChatStream(sessionId: string | null) {
 
     getChatSession(sessionId)
       .then((session) => {
-        if (session.messages?.length > 0) {
-          actionsRef.current.loadMessages(session.messages);
+        if (session.messages && session.messages.length > 0) {
+          const mapped = session.messages.map((m) => ({
+            role: m.role as "user" | "assistant" | "tool",
+            content: m.content ?? "",
+            toolCalls: m.toolCalls?.map((tc) => ({
+              id: tc.id ?? "",
+              name: tc.name ?? "",
+              arguments: tc.arguments ?? "",
+              result: tc.result,
+            })),
+          }));
+          actionsRef.current.loadMessages(mapped);
         }
       })
       .catch(() => {
         // New session or fetch failed — start fresh
       });
   }, [sessionId]);
+
+  // Cleanup listener on unmount
+  useEffect(() => {
+    return () => {
+      if (unlistenRef.current) {
+        unlistenRef.current();
+        unlistenRef.current = null;
+      }
+    };
+  }, []);
 
   const send = useCallback(
     async (content: string) => {
@@ -36,91 +61,39 @@ export function useChatStream(sessionId: string | null) {
       const actions = actionsRef.current;
       actions.addUserMessage(content);
 
-      const controller = new AbortController();
-      abortRef.current = controller;
+      // Cleanup previous listener
+      if (unlistenRef.current) {
+        unlistenRef.current();
+        unlistenRef.current = null;
+      }
+
+      // Listen for Tauri events from the backend
+      const eventName = `chat-event:${sessionId}`;
+      unlistenRef.current = await listen<SSEEvent>(eventName, (event) => {
+        processEvent(
+          event.payload.type,
+          JSON.stringify(event.payload.data),
+          actionsRef.current,
+        );
+      });
 
       try {
-        const resp = await sendChatMessage(sessionId, content);
-        if (!resp.ok || !resp.body) {
-          actions.setError("Failed to send message");
-          return;
-        }
-
-        const reader = resp.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          if (controller.signal.aborted) {
-            reader.cancel();
-            break;
-          }
-
-          buffer += decoder.decode(value, { stream: true });
-
-          // Process complete SSE messages (terminated by double newline)
-          let idx: number;
-          while ((idx = buffer.indexOf("\n\n")) !== -1) {
-            const block = buffer.slice(0, idx);
-            buffer = buffer.slice(idx + 2);
-
-            let eventType = "";
-            let dataStr = "";
-
-            for (const line of block.split("\n")) {
-              if (line.startsWith("event: ")) {
-                eventType = line.slice(7).trim();
-              } else if (line.startsWith("data: ")) {
-                dataStr = line.slice(6);
-              }
-            }
-
-            if (eventType && dataStr !== undefined) {
-              try {
-                processEvent(eventType, dataStr, actionsRef.current);
-              } catch {
-                // ignore parse errors
-              }
-            }
-          }
-        }
-
-        // Process remaining buffer
-        if (buffer.trim()) {
-          let eventType = "";
-          let dataStr = "";
-          for (const line of buffer.split("\n")) {
-            if (line.startsWith("event: ")) {
-              eventType = line.slice(7).trim();
-            } else if (line.startsWith("data: ")) {
-              dataStr = line.slice(6);
-            }
-          }
-          if (eventType) {
-            try {
-              processEvent(eventType, dataStr, actionsRef.current);
-            } catch {
-              // ignore
-            }
-          }
-        }
+        // This triggers the backend to start sending events
+        await sendChatMessage(sessionId, content);
       } catch (err) {
-        if (!controller.signal.aborted) {
-          actionsRef.current.setError(
-            err instanceof Error ? err.message : "Connection error",
-          );
-        }
-      } finally {
-        abortRef.current = null;
+        actionsRef.current.setError(
+          err instanceof Error ? err.message : "Connection error",
+        );
       }
     },
     [sessionId],
   );
 
   const stop = useCallback(() => {
-    abortRef.current?.abort();
+    if (unlistenRef.current) {
+      unlistenRef.current();
+      unlistenRef.current = null;
+    }
     actionsRef.current.finalizeTurn();
   }, []);
 
@@ -147,7 +120,11 @@ export interface StoreActions {
   setError: (error: string) => void;
 }
 
-export function processEvent(type: string, dataStr: string, actions: StoreActions) {
+export function processEvent(
+  type: string,
+  dataStr: string,
+  actions: StoreActions,
+) {
   const data = dataStr === "null" ? null : JSON.parse(dataStr);
 
   switch (type) {

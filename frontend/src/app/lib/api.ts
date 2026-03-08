@@ -1,94 +1,90 @@
-import { ApiClient } from "@/generated/api";
-import type { ChatSessionSummary, GraphData, NodeDetail } from "./types";
+import { invoke } from "@tauri-apps/api/core";
+import type {
+  ChatSession,
+  GraphData,
+  NodeDetail,
+  SearchFactsResponse,
+} from "./types";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
-
-export const apiClient = new ApiClient({
-  baseUrl: API_BASE,
-  retry: false,
-});
+export interface ChatSessionSummary {
+  id: string;
+  preview: string;
+  message_count: number;
+  created_at: string;
+}
 
 export async function startResearch(query: string): Promise<string> {
-  const data = await apiClient.startResearch({ query });
-  return data.id!;
+  return invoke<string>("start_research", { query });
 }
 
-export function createResearchStream(sessionId: string): EventSource {
-  return new EventSource(`${API_BASE}/api/research/${sessionId}/stream`);
-}
-
-export async function getResearch(sessionId: string) {
-  return apiClient.getResearchSession(sessionId);
-}
-
-export async function searchKnowledge(query: string) {
-  return apiClient.searchKnowledge(query);
+export async function searchKnowledge(
+  query: string,
+): Promise<SearchFactsResponse> {
+  return invoke<SearchFactsResponse>("search_knowledge", { query });
 }
 
 export async function getKnowledgeGraph(limit = 300): Promise<GraphData> {
-  return apiClient.getKnowledgeGraph(limit) as Promise<GraphData>;
+  return invoke<GraphData>("get_knowledge_graph", { limit });
 }
 
-export async function getNodeDetail(id: string, depth = 1): Promise<NodeDetail> {
-  return apiClient.getNodeDetail(id, depth) as Promise<NodeDetail>;
+export async function getNodeDetail(
+  id: string,
+  depth = 1,
+): Promise<NodeDetail> {
+  return invoke<NodeDetail>("get_node_detail", { id, depth });
 }
 
-// Intent & Autocomplete API functions
+// Intent & Autocomplete
 
 export async function classifyIntent(
   query: string,
 ): Promise<{ action: "chat" | "knowledge_search"; query: string }> {
-  const resp = await fetch(`${API_BASE}/api/intent`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ query }),
-  });
-  if (!resp.ok) return { action: "chat", query };
-  return resp.json();
+  try {
+    return await invoke<{ action: "chat" | "knowledge_search"; query: string }>(
+      "classify_intent",
+      { query },
+    );
+  } catch {
+    return { action: "chat", query };
+  }
 }
 
 export async function getAutocompleteSuggestions(
   q: string,
-  signal?: AbortSignal,
+  _signal?: AbortSignal,
 ): Promise<string[]> {
-  const resp = await fetch(
-    `${API_BASE}/api/autocomplete?q=${encodeURIComponent(q)}`,
-    { signal },
-  );
-  if (!resp.ok) return [];
-  const data = await resp.json();
-  return data.suggestions ?? [];
+  try {
+    const resp = await invoke<{ suggestions: string[] }>("get_autocomplete", {
+      query: q,
+    });
+    return resp.suggestions ?? [];
+  } catch {
+    return [];
+  }
 }
 
-// Chat API functions
+// Chat
 
 export async function listChatSessions(): Promise<ChatSessionSummary[]> {
-  const resp = await fetch(`${API_BASE}/api/chat/sessions`);
-  if (!resp.ok) return [];
-  return resp.json();
+  try {
+    return await invoke<ChatSessionSummary[]>("list_chat_sessions");
+  } catch {
+    return [];
+  }
 }
 
 export async function createChatSession(): Promise<{ id: string }> {
-  const resp = await fetch(`${API_BASE}/api/chat/sessions`, {
-    method: "POST",
-  });
-  if (!resp.ok) throw new Error("Failed to create chat session");
-  return resp.json();
+  const session = await invoke<ChatSession>("create_chat_session");
+  return { id: session.id };
 }
 
-export async function getChatSession(sessionId: string) {
-  const resp = await fetch(`${API_BASE}/api/chat/sessions/${sessionId}`);
-  if (!resp.ok) throw new Error("Failed to get chat session");
-  return resp.json();
+export async function getChatSession(sessionId: string): Promise<ChatSession> {
+  return invoke<ChatSession>("get_chat_session", { id: sessionId });
 }
 
 export async function sendChatMessage(
   sessionId: string,
   content: string,
-): Promise<Response> {
-  return fetch(`${API_BASE}/api/chat/sessions/${sessionId}/messages`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ content }),
-  });
+): Promise<void> {
+  return invoke<void>("send_chat_message", { id: sessionId, content });
 }

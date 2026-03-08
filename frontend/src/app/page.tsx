@@ -1,16 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { IconLoader2, IconSearch } from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
-import { IconSearch, IconLoader2 } from "@tabler/icons-react";
-import { BackgroundBeams } from "@/components/ui/background-beams";
-import { KnowledgeResults } from "@/components/chat/knowledge-results";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   classifyIntent,
   createChatSession,
   getAutocompleteSuggestions,
   searchKnowledge,
 } from "@/app/lib/api";
+import { KnowledgeResults } from "@/components/chat/knowledge-results";
+import { BackgroundBeams } from "@/components/ui/background-beams";
 
 type Status =
   | "idle"
@@ -72,18 +72,13 @@ export default function Home() {
       const controller = new AbortController();
       abortRef.current = controller;
       try {
-        const results = await getAutocompleteSuggestions(
-          value.trim(),
-          controller.signal,
-        );
+        const results = await getAutocompleteSuggestions(value.trim(), controller.signal);
         if (!controller.signal.aborted) {
           setSuggestions(results);
           setShowSuggestions(results.length > 0);
           // Pick the best ghost text: first suggestion that extends the current input
           const currentQuery = inputRef.current?.value ?? "";
-          const match = results.find((s) =>
-            s.toLowerCase().startsWith(currentQuery.toLowerCase()),
-          );
+          const match = results.find((s) => s.toLowerCase().startsWith(currentQuery.toLowerCase()));
           setGhostText(match ?? "");
         }
       } catch {
@@ -169,9 +164,7 @@ export default function Home() {
           <h1 className="text-6xl font-bold tracking-tight bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
             Zoro
           </h1>
-          <p className="text-muted-foreground text-lg">
-            Find The Truth.
-          </p>
+          <p className="text-muted-foreground text-lg">Find The Truth.</p>
         </div>
 
         {/* Unified input */}
@@ -185,15 +178,18 @@ export default function Home() {
               )}
               <div className="relative flex-1">
                 {/* Ghost text overlay */}
-                {ghostText && query && ghostText.toLowerCase().startsWith(query.toLowerCase()) && ghostText !== query && (
-                  <span
-                    aria-hidden
-                    className="pointer-events-none absolute inset-0 flex items-center text-base text-muted-foreground/25 select-none whitespace-nowrap overflow-hidden"
-                  >
-                    <span className="invisible">{query}</span>
-                    <span>{ghostText.slice(query.length)}</span>
-                  </span>
-                )}
+                {ghostText &&
+                  query &&
+                  ghostText.toLowerCase().startsWith(query.toLowerCase()) &&
+                  ghostText !== query && (
+                    <span
+                      aria-hidden
+                      className="pointer-events-none absolute inset-0 flex items-center text-base text-muted-foreground/25 select-none whitespace-nowrap overflow-hidden"
+                    >
+                      <span className="invisible">{query}</span>
+                      <span>{ghostText.slice(query.length)}</span>
+                    </span>
+                  )}
                 <input
                   ref={inputRef}
                   type="text"
@@ -241,9 +237,7 @@ export default function Home() {
 
         {/* Loading status */}
         {statusLabel && (
-          <p className="text-sm text-muted-foreground animate-pulse">
-            {statusLabel}
-          </p>
+          <p className="text-sm text-muted-foreground animate-pulse">{statusLabel}</p>
         )}
 
         {/* Inline knowledge results */}

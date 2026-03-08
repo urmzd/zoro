@@ -4,8 +4,8 @@ import { useEffect, useRef } from "react";
 import { useChatStream } from "@/app/lib/use-chat-stream";
 import { ChatInput } from "./chat-input";
 import { ChatMessage } from "./chat-message";
-import { StreamingMessage } from "./streaming-message";
 import { GraphSidePanel } from "./graph-side-panel";
+import { StreamingMessage } from "./streaming-message";
 
 interface ChatViewProps {
   sessionId: string;
@@ -13,15 +13,8 @@ interface ChatViewProps {
 }
 
 export function ChatView({ sessionId, initialQuery }: ChatViewProps) {
-  const {
-    messages,
-    currentAssistantContent,
-    currentToolCalls,
-    status,
-    error,
-    send,
-    stop,
-  } = useChatStream(sessionId);
+  const { messages, currentAssistantContent, currentToolCalls, status, error, send, stop } =
+    useChatStream(sessionId);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const sentInitial = useRef(false);
@@ -54,10 +47,7 @@ export function ChatView({ sessionId, initialQuery }: ChatViewProps) {
             ))}
 
             {isStreaming && (
-              <StreamingMessage
-                content={currentAssistantContent}
-                toolCalls={currentToolCalls}
-              />
+              <StreamingMessage content={currentAssistantContent} toolCalls={currentToolCalls} />
             )}
 
             {error && (
@@ -71,11 +61,7 @@ export function ChatView({ sessionId, initialQuery }: ChatViewProps) {
         {/* Input */}
         <div className="border-t border-border px-4 py-3">
           <div className="max-w-3xl mx-auto">
-            <ChatInput
-              onSend={send}
-              onStop={stop}
-              isStreaming={isStreaming}
-            />
+            <ChatInput onSend={send} onStop={stop} isStreaming={isStreaming} />
           </div>
         </div>
       </div>

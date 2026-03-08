@@ -27,6 +27,10 @@ export interface Fact {
   target_node: Entity;
 }
 
+export interface SearchFactsResponse {
+  facts: Fact[];
+}
+
 export interface TimelineEvent {
   type: SSEEventType;
   message: string;
@@ -123,13 +127,6 @@ export interface ChatMessage {
 export interface ChatSession {
   id: string;
   messages: ChatMessage[];
-  created_at: string;
-}
-
-export interface ChatSessionSummary {
-  id: string;
-  preview: string;
-  message_count: number;
   created_at: string;
 }
 
