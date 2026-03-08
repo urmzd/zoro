@@ -49,26 +49,19 @@ pub fn run() {
             // Store child handle for cleanup on exit
             app.manage(SidecarChild(std::sync::Mutex::new(Some(child))));
 
-            // Wait for SearXNG to become ready (poll /healthz)
-            let rt = tokio::runtime::Handle::current();
-            rt.block_on(async {
-                let client = reqwest::Client::new();
-                for _ in 0..30 {
-                    if client
-                        .get("http://127.0.0.1:8888/healthz")
-                        .send()
-                        .await
-                        .is_ok()
-                    {
-                        log::info!("SearXNG sidecar is ready");
-                        return;
-                    }
-                    tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+            // Wait for SearXNG to become ready (poll TCP port)
+            for i in 0..30 {
+                if std::net::TcpStream::connect("127.0.0.1:8888").is_ok() {
+                    log::info!("SearXNG sidecar is ready (attempt {})", i + 1);
+                    break;
                 }
-                log::warn!("SearXNG sidecar did not become ready within 15s, continuing anyway");
-            });
+                if i == 29 {
+                    log::warn!("SearXNG sidecar did not become ready within 15s");
+                }
+                std::thread::sleep(std::time::Duration::from_millis(500));
+            }
 
-            let knowledge = rt.block_on(async {
+            let knowledge = tauri::async_runtime::block_on(async {
                 let ks = knowledge::KnowledgeStore::new(&cfg.db_path)
                     .await
                     .expect("open knowledge store");
@@ -81,7 +74,7 @@ pub fn run() {
             let event_store = event_store::EventStore::new(
                 knowledge.db().clone(),
             );
-            let event_store = Arc::new(rt.block_on(async {
+            let event_store = Arc::new(tauri::async_runtime::block_on(async {
                 event_store.ensure_schema().await.ok();
                 event_store
             }));
