@@ -1,15 +1,10 @@
-# Python
-__pycache__/
-*.py[cod]
-*.egg-info/
-dist/
-.venv/
-*.egg
-
 # Node
 node_modules/
 .next/
 out/
+
+# Rust
+src-tauri/target/
 
 # Environment
 .env
@@ -26,14 +21,10 @@ out/
 .DS_Store
 Thumbs.db
 
-# Playwright
-playwright-report/
-test-results/
-
-# Go
-/api/zoro
-/api/tmp/
-/api/docs/
+# PyInstaller / SearXNG build
+dist/
+build/
+src-tauri/binaries/
 
 # Misc
 *.log
