@@ -5,8 +5,9 @@
   "identifier": "com.zoro.app",
   "build": {
     "beforeDevCommand": "npm run dev --prefix ../frontend",
+    "beforeBuildCommand": "npm run build --prefix ../frontend",
     "devUrl": "http://localhost:3000",
-    "frontendDist": "../frontend/out"
+    "frontendDist": "../frontend/.next"
   },
   "app": {
     "windows": [
