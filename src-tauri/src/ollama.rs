@@ -38,6 +38,7 @@ impl OllamaClient {
         format: Option<serde_json::Value>,
         options: Option<serde_json::Value>,
     ) -> Result<String> {
+        log::info!("[ollama] generate model={model} prompt_len={}", prompt.len());
         let req = OllamaGenerateRequest {
             model: model.to_string(),
             prompt: prompt.to_string(),
@@ -57,10 +58,12 @@ impl OllamaClient {
         if !resp.status().is_success() {
             let status = resp.status();
             let body = resp.text().await.unwrap_or_default();
+            log::error!("[ollama] generate failed: {status} {body}");
             bail!("ollama returned {status}: {body}");
         }
 
         let result: OllamaGenerateResponse = resp.json().await.context("decode ollama response")?;
+        log::info!("[ollama] generate done, response_len={}", result.response.len());
         Ok(result.response)
     }
 
@@ -113,6 +116,7 @@ impl OllamaClient {
     }
 
     pub async fn embed(&self, text: &str) -> Result<Vec<f32>> {
+        log::info!("[ollama] embed text_len={}", text.len());
         let req = OllamaEmbedRequest {
             model: self.embedding_model.clone(),
             input: text.to_string(),
@@ -145,6 +149,7 @@ impl OllamaClient {
         messages: Vec<OllamaChatMessage>,
         tools: Vec<OllamaTool>,
     ) -> Result<mpsc::Receiver<OllamaChatChunk>> {
+        log::info!("[ollama] chat_stream model={} msgs={} tools={}", self.model, messages.len(), tools.len());
         let (tx, rx) = mpsc::channel(64);
         let url = format!("{}/api/chat", self.host);
         let req = OllamaChatRequest {
@@ -158,7 +163,14 @@ impl OllamaClient {
         tokio::spawn(async move {
             let resp = match http.post(&url).json(&req).send().await {
                 Ok(r) if r.status().is_success() => r,
-                _ => return,
+                Ok(r) => {
+                    log::error!("[ollama] chat_stream failed: {}", r.status());
+                    return;
+                }
+                Err(e) => {
+                    log::error!("[ollama] chat_stream connection error: {e}");
+                    return;
+                }
             };
 
             let stream = resp.bytes_stream();

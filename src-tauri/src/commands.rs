@@ -20,14 +20,20 @@ pub struct AppState {
 pub async fn create_chat_session(
     state: State<'_, AppState>,
 ) -> Result<ChatSession, String> {
-    state.agent.create_session().await.map_err(|e| e.to_string())
+    log::info!("[cmd] create_chat_session");
+    let result = state.agent.create_session().await.map_err(|e| e.to_string());
+    log::info!("[cmd] create_chat_session -> {:?}", result.is_ok());
+    result
 }
 
 #[tauri::command]
 pub async fn list_chat_sessions(
     state: State<'_, AppState>,
 ) -> Result<Vec<ChatSessionSummary>, String> {
-    state.agent.list_sessions().await.map_err(|e| e.to_string())
+    log::info!("[cmd] list_chat_sessions");
+    let result = state.agent.list_sessions().await.map_err(|e| e.to_string());
+    log::info!("[cmd] list_chat_sessions -> {:?}", result.is_ok());
+    result
 }
 
 #[tauri::command]
@@ -35,7 +41,10 @@ pub async fn get_chat_session(
     state: State<'_, AppState>,
     id: String,
 ) -> Result<ChatSession, String> {
-    state.agent.get_session(&id).await.map_err(|e| e.to_string())
+    log::info!("[cmd] get_chat_session id={id}");
+    let result = state.agent.get_session(&id).await.map_err(|e| e.to_string());
+    log::info!("[cmd] get_chat_session -> {:?}", result.is_ok());
+    result
 }
 
 #[tauri::command]
@@ -45,6 +54,7 @@ pub async fn send_chat_message(
     id: String,
     content: String,
 ) -> Result<(), String> {
+    log::info!("[cmd] send_chat_message id={id} content={:?}", &content[..content.len().min(100)]);
     let agent = state.agent.clone();
     let event_name = format!("chat-event:{id}");
 
@@ -77,6 +87,7 @@ pub async fn start_research(
     state: State<'_, AppState>,
     query: String,
 ) -> Result<String, String> {
+    log::info!("[cmd] start_research query={query:?}");
     let session = state.orchestrator.create_session(&query).await;
     let session_id = session.id.clone();
     let event_name = format!("research-event:{session_id}");
@@ -113,11 +124,14 @@ pub async fn search_knowledge(
     state: State<'_, AppState>,
     query: String,
 ) -> Result<SearchFactsResponse, String> {
-    state
+    log::info!("[cmd] search_knowledge query={query:?}");
+    let result = state
         .knowledge
         .search_facts(&query, "", &state.ollama)
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| e.to_string());
+    log::info!("[cmd] search_knowledge -> {:?}", result.is_ok());
+    result
 }
 
 #[tauri::command]
@@ -125,11 +139,14 @@ pub async fn get_knowledge_graph(
     state: State<'_, AppState>,
     limit: Option<i64>,
 ) -> Result<GraphData, String> {
-    state
+    log::info!("[cmd] get_knowledge_graph limit={limit:?}");
+    let result = state
         .knowledge
         .get_graph(limit.unwrap_or(300))
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| e.to_string());
+    log::info!("[cmd] get_knowledge_graph -> {:?}", result.is_ok());
+    result
 }
 
 #[tauri::command]
@@ -138,11 +155,14 @@ pub async fn get_node_detail(
     id: String,
     depth: Option<i32>,
 ) -> Result<NodeDetail, String> {
-    state
+    log::info!("[cmd] get_node_detail id={id}");
+    let result = state
         .knowledge
         .get_node(&id, depth.unwrap_or(1))
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| e.to_string());
+    log::info!("[cmd] get_node_detail -> {:?}", result.is_ok());
+    result
 }
 
 // ── Intent & Autocomplete commands ──────────────────────────────────
@@ -158,11 +178,16 @@ pub async fn classify_intent(
     state: State<'_, AppState>,
     query: String,
 ) -> Result<IntentResponse, String> {
+    log::info!("[cmd] classify_intent query={query:?}");
     let action = state
         .agent
         .classify_intent(&query)
         .await
-        .unwrap_or_else(|_| "chat".into());
+        .unwrap_or_else(|e| {
+            log::warn!("[cmd] classify_intent error: {e}");
+            "chat".into()
+        });
+    log::info!("[cmd] classify_intent -> action={action}");
     Ok(IntentResponse {
         action,
         query,
@@ -179,6 +204,8 @@ pub async fn get_autocomplete(
     state: State<'_, AppState>,
     query: String,
 ) -> Result<AutocompleteResponse, String> {
+    log::info!("[cmd] get_autocomplete query={query:?}");
     let suggestions = state.agent.autocomplete(&query).await;
+    log::info!("[cmd] get_autocomplete -> {} suggestions", suggestions.len());
     Ok(AutocompleteResponse { suggestions })
 }
