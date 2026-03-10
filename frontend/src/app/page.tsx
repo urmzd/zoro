@@ -135,7 +135,7 @@ export default function Home() {
       setStatus("starting_chat");
       try {
         const { id } = await createChatSession();
-        router.push(`/chat/${id}?q=${encodeURIComponent(q)}`);
+        router.push(`/chat?id=${id}&q=${encodeURIComponent(q)}`);
       } catch {
         setStatus("idle");
       }
@@ -157,7 +157,7 @@ export default function Home() {
   const statusLabel = STATUS_LABELS[status];
 
   return (
-    <main className="relative flex min-h-[calc(100vh-3rem)] flex-col items-center justify-center px-4">
+    <main className="relative flex min-h-screen flex-col items-center justify-center px-4">
       <BackgroundBeams />
       <div className="relative z-10 flex flex-col items-center gap-8 w-full max-w-3xl">
         <div className="text-center space-y-3">

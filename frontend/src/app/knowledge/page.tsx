@@ -55,7 +55,7 @@ export default function KnowledgePage() {
   }, [resetChat]);
 
   return (
-    <main className="flex h-[calc(100vh-3rem)] flex-col overflow-hidden">
+    <main className="flex h-screen flex-col overflow-hidden">
       {/* Prominent search section */}
       <SearchSection onSearch={send} isStreaming={isStreaming} />
 
