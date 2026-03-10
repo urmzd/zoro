@@ -1,10 +1,10 @@
 # Node
 node_modules/
 .next/
-out/
+frontend/out/
 
-# Rust
-src-tauri/target/
+# Go
+/zoro
 
 # Environment
 .env
@@ -21,10 +21,12 @@ src-tauri/target/
 .DS_Store
 Thumbs.db
 
-# PyInstaller / SearXNG build
+# Build artifacts
+build/bin/
 dist/
-build/
-src-tauri/binaries/
+
+# Docker volumes
+zoro-data/
 
 # Misc
 *.log
