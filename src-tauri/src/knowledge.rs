@@ -319,12 +319,10 @@ impl KnowledgeStore {
             .db
             .query(
                 r#"SELECT
-                    a.uuid AS a_uuid, a.name AS a_name, a.type AS a_type, a.summary AS a_summary,
-                    r.uuid AS r_uuid, r.type AS r_type, r.fact AS r_fact,
-                    b.uuid AS b_uuid, b.name AS b_name, b.type AS b_type, b.summary AS b_summary
-                FROM relates_to AS r
-                LET a = (SELECT * FROM entity WHERE id = r.in)[0]
-                LET b = (SELECT * FROM entity WHERE id = r.out)[0]
+                    in.uuid AS a_uuid, in.name AS a_name, in.type AS a_type, in.summary AS a_summary,
+                    uuid AS r_uuid, type AS r_type, fact AS r_fact,
+                    out.uuid AS b_uuid, out.name AS b_name, out.type AS b_type, out.summary AS b_summary
+                FROM relates_to
                 LIMIT $limit"#,
             )
             .bind(("limit", limit))
@@ -415,12 +413,14 @@ impl KnowledgeStore {
             .db
             .query(
                 r#"SELECT
-                    r.uuid AS r_uuid, r.type AS r_type, r.fact AS r_fact,
-                    n.uuid AS n_uuid, n.name AS n_name, n.type AS n_type, n.summary AS n_summary,
-                    r.in = type::thing($record_id) AS is_outgoing
-                FROM relates_to AS r
-                WHERE r.in = type::thing($record_id) OR r.out = type::thing($record_id)
-                LET n = IF r.in = type::thing($record_id) THEN (SELECT * FROM entity WHERE id = r.out)[0] ELSE (SELECT * FROM entity WHERE id = r.in)[0] END"#,
+                    uuid AS r_uuid, type AS r_type, fact AS r_fact,
+                    (IF in = type::thing($record_id) THEN out.uuid ELSE in.uuid END) AS n_uuid,
+                    (IF in = type::thing($record_id) THEN out.name ELSE in.name END) AS n_name,
+                    (IF in = type::thing($record_id) THEN out.type ELSE in.type END) AS n_type,
+                    (IF in = type::thing($record_id) THEN out.summary ELSE in.summary END) AS n_summary,
+                    in = type::thing($record_id) AS is_outgoing
+                FROM relates_to
+                WHERE in = type::thing($record_id) OR out = type::thing($record_id)"#,
             )
             .bind(("record_id", record_id))
             .await?
