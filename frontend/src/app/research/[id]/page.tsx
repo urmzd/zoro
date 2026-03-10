@@ -1,12 +1,12 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
-import { use } from "react";
+import { useParams, useSearchParams } from "next/navigation";
 import { ResearchView } from "@/components/research/research-view";
 
-export default function ResearchPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function ResearchPage() {
+  const params = useParams();
   const searchParams = useSearchParams();
+  const id = params.id as string;
   const query = searchParams.get("q") || "";
 
   return <ResearchView sessionId={id} query={query} />;
