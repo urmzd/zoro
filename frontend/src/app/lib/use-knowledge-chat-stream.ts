@@ -1,15 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef } from "react";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { useKnowledgeChatStore } from "@/lib/stores/knowledge-chat-store";
-import { createChatSession, sendChatMessage } from "./api";
+import { createChatSession, sendMessageSSE, type SSEEvent } from "./api";
 import { processEvent, type StoreActions } from "./use-chat-stream";
-
-interface SSEEvent {
-  type: string;
-  data: unknown;
-}
 
 interface UseKnowledgeChatStreamOptions {
   onToolCallResult?: (name: string, result: string) => void;
@@ -19,7 +13,7 @@ export function useKnowledgeChatStream(
   options: UseKnowledgeChatStreamOptions = {},
 ) {
   const store = useKnowledgeChatStore();
-  const unlistenRef = useRef<UnlistenFn | null>(null);
+  const cancelRef = useRef<(() => void) | null>(null);
   const actionsRef = useRef(useKnowledgeChatStore.getState());
   actionsRef.current = useKnowledgeChatStore.getState();
   const optionsRef = useRef(options);
@@ -28,9 +22,9 @@ export function useKnowledgeChatStream(
   // Cleanup listener on unmount
   useEffect(() => {
     return () => {
-      if (unlistenRef.current) {
-        unlistenRef.current();
-        unlistenRef.current = null;
+      if (cancelRef.current) {
+        cancelRef.current();
+        cancelRef.current = null;
       }
     };
   }, []);
@@ -44,9 +38,9 @@ export function useKnowledgeChatStream(
     let sid = actions.sessionId;
     if (!sid) {
       try {
-        const { id } = await createChatSession();
-        sid = id;
-        actions.setSessionId(id);
+        const session = await createChatSession();
+        sid = session.id;
+        actions.setSessionId(session.id);
       } catch {
         actions.setError("Failed to create session");
         return;
@@ -55,10 +49,10 @@ export function useKnowledgeChatStream(
 
     actions.addUserMessage(content);
 
-    // Cleanup previous listener
-    if (unlistenRef.current) {
-      unlistenRef.current();
-      unlistenRef.current = null;
+    // Cleanup previous connection
+    if (cancelRef.current) {
+      cancelRef.current();
+      cancelRef.current = null;
     }
 
     // Wrap store actions to intercept tool_call_result for the callback
@@ -77,29 +71,27 @@ export function useKnowledgeChatStream(
       setError: actions.setError,
     };
 
-    // Listen for Tauri events
-    const eventName = `chat-event:${sid}`;
-    unlistenRef.current = await listen<SSEEvent>(eventName, (event) => {
-      processEvent(
-        event.payload.type,
-        JSON.stringify(event.payload.data),
-        wrappedActions,
-      );
-    });
-
-    try {
-      await sendChatMessage(sid, content);
-    } catch (err) {
-      actionsRef.current.setError(
-        err instanceof Error ? err.message : "Connection error",
-      );
-    }
+    // Stream SSE events from the HTTP server
+    cancelRef.current = sendMessageSSE(
+      sid,
+      content,
+      (event: SSEEvent) => {
+        processEvent(
+          event.type,
+          JSON.stringify(event.data),
+          wrappedActions,
+        );
+      },
+      (err) => {
+        actionsRef.current.setError(err.message);
+      },
+    );
   }, []);
 
   const stop = useCallback(() => {
-    if (unlistenRef.current) {
-      unlistenRef.current();
-      unlistenRef.current = null;
+    if (cancelRef.current) {
+      cancelRef.current();
+      cancelRef.current = null;
     }
     actionsRef.current.finalizeTurn();
   }, []);

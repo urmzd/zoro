@@ -1,18 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef } from "react";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { useChatStore } from "@/lib/stores/chat-store";
-import { getChatSession, sendChatMessage } from "./api";
-
-interface SSEEvent {
-  type: string;
-  data: unknown;
-}
+import { getChatSession, sendMessageSSE, type SSEEvent } from "./api";
 
 export function useChatStream(sessionId: string | null) {
   const store = useChatStore();
-  const unlistenRef = useRef<UnlistenFn | null>(null);
+  const cancelRef = useRef<(() => void) | null>(null);
   const loadedSessionRef = useRef<string | null>(null);
   const actionsRef = useRef(useChatStore.getState());
   actionsRef.current = useChatStore.getState();
@@ -47,9 +41,9 @@ export function useChatStream(sessionId: string | null) {
   // Cleanup listener on unmount
   useEffect(() => {
     return () => {
-      if (unlistenRef.current) {
-        unlistenRef.current();
-        unlistenRef.current = null;
+      if (cancelRef.current) {
+        cancelRef.current();
+        cancelRef.current = null;
       }
     };
   }, []);
@@ -61,38 +55,35 @@ export function useChatStream(sessionId: string | null) {
       const actions = actionsRef.current;
       actions.addUserMessage(content);
 
-      // Cleanup previous listener
-      if (unlistenRef.current) {
-        unlistenRef.current();
-        unlistenRef.current = null;
+      // Cleanup previous connection
+      if (cancelRef.current) {
+        cancelRef.current();
+        cancelRef.current = null;
       }
 
-      // Listen for Tauri events from the backend
-      const eventName = `chat-event:${sessionId}`;
-      unlistenRef.current = await listen<SSEEvent>(eventName, (event) => {
-        processEvent(
-          event.payload.type,
-          JSON.stringify(event.payload.data),
-          actionsRef.current,
-        );
-      });
-
-      try {
-        // This triggers the backend to start sending events
-        await sendChatMessage(sessionId, content);
-      } catch (err) {
-        actionsRef.current.setError(
-          err instanceof Error ? err.message : "Connection error",
-        );
-      }
+      // Stream SSE events from the HTTP server
+      cancelRef.current = sendMessageSSE(
+        sessionId,
+        content,
+        (event: SSEEvent) => {
+          processEvent(
+            event.type,
+            JSON.stringify(event.data),
+            actionsRef.current,
+          );
+        },
+        (err) => {
+          actionsRef.current.setError(err.message);
+        },
+      );
     },
     [sessionId],
   );
 
   const stop = useCallback(() => {
-    if (unlistenRef.current) {
-      unlistenRef.current();
-      unlistenRef.current = null;
+    if (cancelRef.current) {
+      cancelRef.current();
+      cancelRef.current = null;
     }
     actionsRef.current.finalizeTurn();
   }, []);
