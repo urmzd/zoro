@@ -37,7 +37,7 @@ export function ChatView({ sessionId, initialQuery }: ChatViewProps) {
   const isStreaming = status === "streaming";
 
   return (
-    <div className="flex h-[calc(100vh-3rem)]">
+    <div className="flex h-screen">
       <div className="flex-1 flex flex-col min-w-0">
         {/* Message thread */}
         <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-6">

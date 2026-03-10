@@ -3,25 +3,19 @@
 import { IconSearch } from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { startResearch } from "@/app/lib/api";
 import { HoverBorderGradient } from "@/components/ui/hover-border-gradient";
 
 export function SearchForm() {
   const [query, setQuery] = useState("");
-  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  async function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!query.trim() || loading) return;
+    if (!query.trim()) return;
 
-    setLoading(true);
-    try {
-      const id = await startResearch(query.trim());
-      router.push(`/research/${id}?q=${encodeURIComponent(query.trim())}`);
-    } catch {
-      setLoading(false);
-    }
+    // Navigate to research page — the SSE stream starts in useResearchStream
+    const id = crypto.randomUUID();
+    router.push(`/research?id=${id}&q=${encodeURIComponent(query.trim())}`);
   }
 
   return (
@@ -33,15 +27,14 @@ export function SearchForm() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="What would you like to research?"
-          disabled={loading}
           className="flex-1 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground text-base"
         />
         <button
           type="submit"
-          disabled={loading || !query.trim()}
+          disabled={!query.trim()}
           className="shrink-0 rounded-full bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground transition-opacity disabled:opacity-50 hover:opacity-90"
         >
-          {loading ? "Starting..." : "Research"}
+          Research
         </button>
       </HoverBorderGradient>
     </form>
