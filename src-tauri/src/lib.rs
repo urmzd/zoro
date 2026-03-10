@@ -22,6 +22,18 @@ pub fn run() {
         .setup(|app| {
             let cfg = config::AppConfig::default();
 
+            // Kill any orphaned SearXNG process on port 8888
+            if std::net::TcpStream::connect("127.0.0.1:8888").is_ok() {
+                log::warn!("Port 8888 already in use, killing existing process");
+                #[cfg(unix)]
+                {
+                    let _ = std::process::Command::new("sh")
+                        .args(["-c", "lsof -ti :8888 | xargs kill 2>/dev/null"])
+                        .status();
+                    std::thread::sleep(std::time::Duration::from_secs(1));
+                }
+            }
+
             // Spawn SearXNG sidecar
             let sidecar_command = app.shell().sidecar("searxng").unwrap();
             let (mut rx, child) = sidecar_command.spawn().expect("failed to spawn searxng sidecar");
