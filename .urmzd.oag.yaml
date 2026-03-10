@@ -1,0 +1,10 @@
+input: api/openapi.yaml
+naming:
+  strategy: use_operation_id
+generators:
+  node-client:
+    output: frontend/src/generated/api
+    layout: modular
+  react-swr-client:
+    output: frontend/src/generated/hooks
+    layout: modular
