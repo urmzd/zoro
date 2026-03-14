@@ -1,9 +1,4 @@
-import type {
-  ChatSession,
-  GraphData,
-  NodeDetail,
-  SearchFactsResponse,
-} from "./types";
+import type { ChatSession, GraphData, NodeDetail, SearchFactsResponse } from "./types";
 
 const API_BASE = "/api";
 
@@ -38,13 +33,9 @@ export async function getChatSession(sessionId: string): Promise<ChatSession> {
   return resp.json();
 }
 
-export async function searchSessions(
-  query: string,
-): Promise<ChatSessionSummary[]> {
+export async function searchSessions(query: string): Promise<ChatSessionSummary[]> {
   try {
-    const resp = await fetch(
-      `${API_BASE}/sessions/search?q=${encodeURIComponent(query)}`,
-    );
+    const resp = await fetch(`${API_BASE}/sessions/search?q=${encodeURIComponent(query)}`);
     if (!resp.ok) return [];
     return resp.json();
   } catch {
@@ -54,12 +45,8 @@ export async function searchSessions(
 
 // ── Knowledge ───────────────────────────────────────────────────────
 
-export async function searchKnowledge(
-  query: string,
-): Promise<SearchFactsResponse> {
-  const resp = await fetch(
-    `${API_BASE}/knowledge/search?q=${encodeURIComponent(query)}`,
-  );
+export async function searchKnowledge(query: string): Promise<SearchFactsResponse> {
+  const resp = await fetch(`${API_BASE}/knowledge/search?q=${encodeURIComponent(query)}`);
   if (!resp.ok) throw new Error(`searchKnowledge: ${resp.status}`);
   return resp.json();
 }
@@ -70,13 +57,8 @@ export async function getKnowledgeGraph(limit = 300): Promise<GraphData> {
   return resp.json();
 }
 
-export async function getNodeDetail(
-  id: string,
-  depth = 1,
-): Promise<NodeDetail> {
-  const resp = await fetch(
-    `${API_BASE}/knowledge/nodes/${id}?depth=${depth}`,
-  );
+export async function getNodeDetail(id: string, depth = 1): Promise<NodeDetail> {
+  const resp = await fetch(`${API_BASE}/knowledge/nodes/${id}?depth=${depth}`);
   if (!resp.ok) throw new Error(`getNodeDetail: ${resp.status}`);
   return resp.json();
 }
@@ -104,9 +86,7 @@ export async function getAutocompleteSuggestions(
   _signal?: AbortSignal,
 ): Promise<string[]> {
   try {
-    const resp = await fetch(
-      `${API_BASE}/autocomplete?q=${encodeURIComponent(q)}`,
-    );
+    const resp = await fetch(`${API_BASE}/autocomplete?q=${encodeURIComponent(q)}`);
     if (!resp.ok) return [];
     const data = await resp.json();
     return data.suggestions ?? [];

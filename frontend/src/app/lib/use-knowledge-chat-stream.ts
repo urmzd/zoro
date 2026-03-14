@@ -2,16 +2,14 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import { useKnowledgeChatStore } from "@/lib/stores/knowledge-chat-store";
-import { createChatSession, sendMessageSSE, type SSEEvent } from "./api";
+import { createChatSession, type SSEEvent, sendMessageSSE } from "./api";
 import { processEvent, type StoreActions } from "./use-chat-stream";
 
 interface UseKnowledgeChatStreamOptions {
   onToolCallResult?: (name: string, result: string) => void;
 }
 
-export function useKnowledgeChatStream(
-  options: UseKnowledgeChatStreamOptions = {},
-) {
+export function useKnowledgeChatStream(options: UseKnowledgeChatStreamOptions = {}) {
   const store = useKnowledgeChatStore();
   const cancelRef = useRef<(() => void) | null>(null);
   const actionsRef = useRef(useKnowledgeChatStore.getState());
@@ -76,11 +74,7 @@ export function useKnowledgeChatStream(
       sid,
       content,
       (event: SSEEvent) => {
-        processEvent(
-          event.type,
-          JSON.stringify(event.data),
-          wrappedActions,
-        );
+        processEvent(event.type, JSON.stringify(event.data), wrappedActions);
       },
       (err) => {
         actionsRef.current.setError(err.message);

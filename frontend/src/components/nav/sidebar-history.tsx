@@ -3,8 +3,8 @@
 import { IconMessageCircle, IconSearch } from "@tabler/icons-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { listChatSessions, searchSessions } from "@/app/lib/api";
 import type { ChatSessionSummary } from "@/app/lib/api";
+import { listChatSessions, searchSessions } from "@/app/lib/api";
 import { cn } from "@/lib/utils";
 
 export function SidebarHistory() {
@@ -78,9 +78,7 @@ export function SidebarHistory() {
       {/* Session list */}
       <div className="space-y-0.5">
         {loading && sessions.length === 0 ? (
-          <p className="px-2 py-4 text-xs text-muted-foreground text-center">
-            Loading...
-          </p>
+          <p className="px-2 py-4 text-xs text-muted-foreground text-center">Loading...</p>
         ) : sessions.length === 0 ? (
           <p className="px-2 py-4 text-xs text-muted-foreground text-center">
             {searchQuery ? "No matches" : "No sessions yet"}
@@ -99,9 +97,7 @@ export function SidebarHistory() {
               <div className="flex items-start gap-2">
                 <IconMessageCircle className="h-3.5 w-3.5 mt-0.5 shrink-0 text-muted-foreground" />
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs text-foreground truncate">
-                    {s.preview || "Empty session"}
-                  </p>
+                  <p className="text-xs text-foreground truncate">{s.preview || "Empty session"}</p>
                   <p className="text-[10px] text-muted-foreground mt-0.5">
                     {s.message_count} msgs
                     {" \u00b7 "}

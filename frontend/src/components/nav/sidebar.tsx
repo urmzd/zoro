@@ -10,10 +10,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { createChatSession } from "@/app/lib/api";
+import { cn } from "@/lib/utils";
 import { SidebarHistory } from "./sidebar-history";
 import { SidebarKnowledge } from "./sidebar-knowledge";
 import { SidebarSettings } from "./sidebar-settings";
-import { cn } from "@/lib/utils";
 
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(() => {
@@ -84,7 +84,9 @@ export function Sidebar() {
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto min-h-0">
         {!collapsed && (
-          <Suspense fallback={<div className="px-4 py-2 text-xs text-muted-foreground">Loading...</div>}>
+          <Suspense
+            fallback={<div className="px-4 py-2 text-xs text-muted-foreground">Loading...</div>}
+          >
             <SidebarHistory />
           </Suspense>
         )}

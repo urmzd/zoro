@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useResearchStore } from "@/lib/stores/research-store";
-import { startResearchSSE, type SSEEvent } from "./api";
+import { type SSEEvent, startResearchSSE } from "./api";
 
 export function useResearchStream(sessionId: string | null, query: string) {
   const store = useResearchStore();
@@ -23,10 +23,7 @@ export function useResearchStream(sessionId: string | null, query: string) {
         switch (type) {
           case "search_started":
             store.setStatus("running");
-            store.addTimelineEvent(
-              "search_started",
-              d?.query || "Searching...",
-            );
+            store.addTimelineEvent("search_started", d?.query || "Searching...");
             break;
 
           case "search_results":
@@ -61,10 +58,7 @@ export function useResearchStream(sessionId: string | null, query: string) {
 
           case "entity_discovered":
             store.addEntity(d);
-            store.addTimelineEvent(
-              "entity_discovered",
-              `Discovered: ${d?.name}`,
-            );
+            store.addTimelineEvent("entity_discovered", `Discovered: ${d?.name}`);
             break;
 
           case "relation_found":

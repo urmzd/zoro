@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import { useChatStore } from "@/lib/stores/chat-store";
-import { getChatSession, sendMessageSSE, type SSEEvent } from "./api";
+import { getChatSession, type SSEEvent, sendMessageSSE } from "./api";
 
 export function useChatStream(sessionId: string | null) {
   const store = useChatStore();
@@ -66,11 +66,7 @@ export function useChatStream(sessionId: string | null) {
         sessionId,
         content,
         (event: SSEEvent) => {
-          processEvent(
-            event.type,
-            JSON.stringify(event.data),
-            actionsRef.current,
-          );
+          processEvent(event.type, JSON.stringify(event.data), actionsRef.current);
         },
         (err) => {
           actionsRef.current.setError(err.message);
@@ -101,21 +97,13 @@ export function useChatStream(sessionId: string | null) {
 
 export interface StoreActions {
   appendAssistantContent: (content: string) => void;
-  addToolCallStart: (toolCall: {
-    id: string;
-    name: string;
-    arguments: string;
-  }) => void;
+  addToolCallStart: (toolCall: { id: string; name: string; arguments: string }) => void;
   setToolCallResult: (id: string, result: string) => void;
   finalizeTurn: () => void;
   setError: (error: string) => void;
 }
 
-export function processEvent(
-  type: string,
-  dataStr: string,
-  actions: StoreActions,
-) {
+export function processEvent(type: string, dataStr: string, actions: StoreActions) {
   const data = dataStr === "null" ? null : JSON.parse(dataStr);
 
   switch (type) {
