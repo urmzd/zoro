@@ -1,7 +1,7 @@
 # ── One-command setup ─────────────────────────────────────────────────
 # Get from zero to running with: just setup && just dev
 
-# Full first-time setup: install deps, pull models, build sidecar
+# Full first-time setup: install deps, pull models, start services
 setup:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -9,11 +9,11 @@ setup:
     echo "Installing frontend dependencies..."
     cd frontend && npm install && cd ..
 
-    echo "Fetching Rust dependencies..."
-    cd src-tauri && cargo fetch && cd ..
+    echo "Fetching Go dependencies..."
+    go mod tidy
 
-    echo "Building SearXNG sidecar..."
-    bash scripts/build-searxng.sh
+    echo "Starting SurrealDB + SearXNG via Docker..."
+    docker compose up -d
 
     echo "Pulling LLM models (this may take a few minutes)..."
     ollama pull qwen3.5:4b
@@ -23,11 +23,7 @@ setup:
     echo ""
     echo "Done! Run 'just dev' to start."
 
-# Build the SearXNG sidecar binary via PyInstaller
-build-searxng:
-    bash scripts/build-searxng.sh
-
-# Run in development mode
+# Run in development mode (Go server + Next.js dev server)
 dev:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -39,24 +35,49 @@ dev:
         sleep 2
     fi
 
-    cargo tauri dev
+    # Ensure Docker services are running
+    docker compose up -d
 
-# Build the production desktop app
+    # Start Go backend
+    go run . &
+    GO_PID=$!
+
+    # Start Next.js frontend
+    cd frontend && npm run dev &
+    NEXT_PID=$!
+
+    # Wait for either to exit
+    trap "kill $GO_PID $NEXT_PID 2>/dev/null" EXIT
+    wait
+
+# Build the production app
 build:
-    cargo tauri build
+    docker compose up -d
+    go build -o zoro .
+    cd frontend && npm run build
+
+# Stop Docker services
+stop:
+    docker compose down
 
 # ── Checks ───────────────────────────────────────────────────────────
 
 # Run all checks
-check: check-rust check-frontend
+check: check-go check-frontend
 
-# Lint and test Rust
-check-rust:
-    cd src-tauri && cargo clippy -- -D warnings && cargo test
+# Lint and vet Go
+check-go:
+    go vet ./...
 
 # Lint and typecheck frontend
 check-frontend:
     cd frontend && npx biome check . && npx tsc --noEmit
+
+# ── Code generation ─────────────────────────────────────────────────
+
+# Generate frontend API client from OpenAPI spec
+generate:
+    oag generate
 
 # ── Utilities ────────────────────────────────────────────────────────
 
