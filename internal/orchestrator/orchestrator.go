@@ -9,14 +9,14 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/urmzd/agent-sdk/ollama"
-	kg "github.com/urmzd/knowledge-graph-sdk"
+	"github.com/urmzd/adk/provider/ollama"
+	"github.com/urmzd/kgdk/kgtypes"
 	"github.com/urmzd/zoro/internal/models"
 	"github.com/urmzd/zoro/internal/searcher"
 )
 
 type Orchestrator struct {
-	graph       kg.Graph
+	graph       kgtypes.Graph
 	adapter     *ollama.Adapter
 	searcher    *searcher.Searcher
 	sessions    map[string]*models.ResearchSession
@@ -24,7 +24,7 @@ type Orchestrator struct {
 	mu          sync.RWMutex
 }
 
-func New(g kg.Graph, a *ollama.Adapter, s *searcher.Searcher) *Orchestrator {
+func New(g kgtypes.Graph, a *ollama.Adapter, s *searcher.Searcher) *Orchestrator {
 	return &Orchestrator{
 		graph:       g,
 		adapter:     a,
@@ -171,7 +171,7 @@ func (o *Orchestrator) Run(ctx context.Context, sessionID string) {
 	// Step 3: Ingest each result
 	for i, result := range results {
 		episodeBody := fmt.Sprintf("Title: %s\nURL: %s\nSnippet: %s", result.Title, result.URL, result.Snippet)
-		input := &kg.EpisodeInput{
+		input := &kgtypes.EpisodeInput{
 			Name:    fmt.Sprintf("%s - Result %d", query, i+1),
 			Body:    episodeBody,
 			Source:  result.URL,
@@ -204,7 +204,7 @@ func (o *Orchestrator) Run(ctx context.Context, sessionID string) {
 	}
 
 	// Step 4: Get session subgraph
-	subgraph, err := o.graph.SearchFacts(ctx, query, kg.WithGroupID(sessionID))
+	subgraph, err := o.graph.SearchFacts(ctx, query, kgtypes.WithGroupID(sessionID))
 	if err != nil {
 		log.Printf("subgraph search error: %v", err)
 	} else {
@@ -244,7 +244,7 @@ func (o *Orchestrator) Run(ctx context.Context, sessionID string) {
 	o.closeSubscribers(sessionID)
 }
 
-func buildSummaryPrompt(query string, results []models.SearchResult, facts *kg.SearchFactsResult) string {
+func buildSummaryPrompt(query string, results []models.SearchResult, facts *kgtypes.SearchFactsResult) string {
 	var b strings.Builder
 	b.WriteString("You are a research assistant. Synthesize the following search results and knowledge graph facts into a comprehensive research summary.\n\n")
 	fmt.Fprintf(&b, "Research Query: %s\n\n", query)

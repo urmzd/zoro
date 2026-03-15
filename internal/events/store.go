@@ -49,7 +49,7 @@ func (s *Store) CreateSession() (string, error) {
 	sessionID := uuid.New().String()
 
 	_, err := surrealdb.Query[any](s.ctx, s.db,
-		"CREATE type::thing('chat_session', $id) SET created_at = time::now()",
+		"CREATE type::record('chat_session', $id) SET created_at = time::now()",
 		map[string]any{"id": sessionID},
 	)
 	if err != nil {
@@ -73,7 +73,7 @@ func (s *Store) AppendEvent(sessionID string, event models.ChatEvent) error {
 		"content":    event.Content,
 	}
 
-	query := "CREATE type::thing('chat_event', $id) SET session_id = $session_id, type = $type, role = $role, content = $content"
+	query := "CREATE type::record('chat_event', $id) SET session_id = $session_id, type = $type, role = $role, content = $content"
 	if len(event.ToolCalls) > 0 {
 		params["tool_calls"] = event.ToolCalls
 		query += ", tool_calls = $tool_calls"
@@ -99,7 +99,7 @@ type eventRow struct {
 
 func (s *Store) GetSession(sessionID string) (*models.ChatSession, error) {
 	sessResult, err := surrealdb.Query[[]sessionRow](s.ctx, s.db,
-		"SELECT created_at FROM type::thing('chat_session', $id)",
+		"SELECT created_at FROM type::record('chat_session', $id)",
 		map[string]any{"id": sessionID},
 	)
 	if err != nil || sessResult == nil || len(*sessResult) == 0 || len((*sessResult)[0].Result) == 0 {

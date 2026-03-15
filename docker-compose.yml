@@ -1,7 +1,8 @@
 services:
   surrealdb:
     image: surrealdb/surrealdb:latest
-    command: start --user root --pass root file:/data/zoro.db
+    user: root
+    command: start --user root --pass root surrealkv:/data/zoro.db
     ports:
       - "8000:8000"
     volumes:

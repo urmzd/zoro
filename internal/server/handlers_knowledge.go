@@ -6,12 +6,20 @@ import (
 	"strconv"
 
 	"github.com/labstack/echo/v4"
+	"github.com/urmzd/kgdk/kgtypes"
 )
 
 func (s *Server) SearchKnowledge(c echo.Context) error {
 	q := c.QueryParam("q")
-	log.Printf("[http] SearchKnowledge query=%q", q)
-	resp, err := s.graph.SearchFacts(c.Request().Context(), q)
+	limitStr := c.QueryParam("limit")
+	limit := 20
+	if limitStr != "" {
+		if v, err := strconv.Atoi(limitStr); err == nil && v > 0 {
+			limit = v
+		}
+	}
+	log.Printf("[http] SearchKnowledge query=%q limit=%d", q, limit)
+	resp, err := s.graph.SearchFacts(c.Request().Context(), q, kgtypes.WithLimit(limit))
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}

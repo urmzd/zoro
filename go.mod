@@ -6,8 +6,8 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/labstack/echo/v4 v4.13.3
 	github.com/surrealdb/surrealdb.go v1.4.0
-	github.com/urmzd/agent-sdk v0.0.0
-	github.com/urmzd/knowledge-graph-sdk v0.0.0
+	github.com/urmzd/adk v0.8.0
+	github.com/urmzd/kgdk v0.4.0
 )
 
 require (
@@ -20,14 +20,9 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
-	golang.org/x/crypto v0.33.0 // indirect
-	golang.org/x/net v0.35.0 // indirect
-	golang.org/x/sys v0.30.0 // indirect
-	golang.org/x/text v0.22.0 // indirect
+	golang.org/x/crypto v0.40.0 // indirect
+	golang.org/x/net v0.41.0 // indirect
+	golang.org/x/sys v0.38.0 // indirect
+	golang.org/x/text v0.30.0 // indirect
 	golang.org/x/time v0.8.0 // indirect
-)
-
-replace (
-	github.com/urmzd/agent-sdk => ../agent-sdk
-	github.com/urmzd/knowledge-graph-sdk => ../knowledge-graph-sdk
 )

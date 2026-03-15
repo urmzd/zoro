@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"strings"
 
-	agentsdk "github.com/urmzd/agent-sdk"
+	"github.com/urmzd/adk/core"
 	"github.com/urmzd/zoro/internal/searcher"
 )
 
-// WebSearchTool implements agentsdk.Tool for web searching.
+// WebSearchTool implements core.Tool for web searching.
 type WebSearchTool struct {
 	searcher *searcher.Searcher
 }
@@ -18,14 +18,14 @@ func NewWebSearchTool(s *searcher.Searcher) *WebSearchTool {
 	return &WebSearchTool{searcher: s}
 }
 
-func (t *WebSearchTool) Definition() agentsdk.ToolDef {
-	return agentsdk.ToolDef{
+func (t *WebSearchTool) Definition() core.ToolDef {
+	return core.ToolDef{
 		Name:        "web_search",
 		Description: "Search the web for current information on a topic. Returns up to 5 results with titles, URLs, and snippets.",
-		Parameters: agentsdk.ParameterSchema{
+		Parameters: core.ParameterSchema{
 			Type:     "object",
 			Required: []string{"query"},
-			Properties: map[string]agentsdk.PropertyDef{
+			Properties: map[string]core.PropertyDef{
 				"query": {Type: "string", Description: "The search query"},
 			},
 		},

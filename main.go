@@ -7,11 +7,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/urmzd/agent-sdk/ollama"
-	kg "github.com/urmzd/knowledge-graph-sdk"
-	"github.com/urmzd/knowledge-graph-sdk/embed"
-	"github.com/urmzd/knowledge-graph-sdk/extract"
-	"github.com/urmzd/knowledge-graph-sdk/surreal"
+	"github.com/urmzd/adk/provider/ollama"
+	kg "github.com/urmzd/kgdk"
+	kgsurrealdb "github.com/urmzd/kgdk/surrealdb"
 	"github.com/urmzd/zoro/internal/agent"
 	"github.com/urmzd/zoro/internal/config"
 	"github.com/urmzd/zoro/internal/events"
@@ -20,17 +18,6 @@ import (
 	"github.com/urmzd/zoro/internal/server"
 	"github.com/urmzd/zoro/internal/tools"
 )
-
-// ollamaEmbedder adapts the ollama client to the embed.Embedder interface.
-type ollamaEmbedder struct {
-	client *ollama.Client
-}
-
-func (e *ollamaEmbedder) Embed(ctx context.Context, text string) ([]float32, error) {
-	return e.client.Embed(ctx, text)
-}
-
-var _ embed.Embedder = (*ollamaEmbedder)(nil)
 
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -43,17 +30,31 @@ func main() {
 	adapter := ollama.NewAdapter(ollamaClient)
 
 	// Embedder + extractor for knowledge graph
-	embedder := &ollamaEmbedder{client: ollamaClient}
-	extractor := extract.NewSimpleExtractor(ollamaClient)
+	embedder := kg.NewOllamaEmbedder(ollamaClient)
+	extractor := kg.NewOllamaExtractor(ollamaClient)
 
-	// Knowledge graph (SurrealDB)
-	store, err := surreal.NewStore(ctx, cfg.SurrealDBURL, "zoro", "zoro", "root", "root", extractor, embedder)
+	// SurrealDB store (created directly for DB connection sharing)
+	store, err := kgsurrealdb.NewStore(ctx, kgsurrealdb.StoreConfig{
+		URL:       cfg.SurrealDBURL,
+		Namespace: "zoro",
+		Database:  "zoro",
+		Username:  "root",
+		Password:  "root",
+	})
 	if err != nil {
 		log.Fatalf("failed to connect to knowledge graph: %v", err)
 	}
 	defer store.Close(ctx)
 
-	var graph kg.Graph = store
+	// Knowledge graph (wraps store with extraction/dedup engine)
+	graph, err := kg.NewGraph(ctx,
+		kg.WithStore(store),
+		kg.WithExtractor(extractor),
+		kg.WithEmbedder(embedder),
+	)
+	if err != nil {
+		log.Fatalf("failed to create knowledge graph: %v", err)
+	}
 
 	// Event store shares the same SurrealDB connection
 	es := events.New(ctx, store.DB())

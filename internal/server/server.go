@@ -2,8 +2,8 @@ package server
 
 import (
 	"github.com/labstack/echo/v4"
-	"github.com/urmzd/agent-sdk/ollama"
-	kg "github.com/urmzd/knowledge-graph-sdk"
+	"github.com/urmzd/adk/provider/ollama"
+	"github.com/urmzd/kgdk/kgtypes"
 	"github.com/urmzd/zoro/internal/agent"
 	"github.com/urmzd/zoro/internal/orchestrator"
 )
@@ -11,11 +11,11 @@ import (
 type Server struct {
 	agent        *agent.Agent
 	orchestrator *orchestrator.Orchestrator
-	graph        kg.Graph
+	graph        kgtypes.Graph
 	adapter      *ollama.Adapter
 }
 
-func New(a *agent.Agent, o *orchestrator.Orchestrator, g kg.Graph, ad *ollama.Adapter) *Server {
+func New(a *agent.Agent, o *orchestrator.Orchestrator, g kgtypes.Graph, ad *ollama.Adapter) *Server {
 	return &Server{
 		agent:        a,
 		orchestrator: o,

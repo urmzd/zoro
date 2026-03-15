@@ -7,8 +7,9 @@ import (
 	"sync"
 	"time"
 
-	agentsdk "github.com/urmzd/agent-sdk"
-	"github.com/urmzd/agent-sdk/ollama"
+	"github.com/urmzd/adk"
+	"github.com/urmzd/adk/core"
+	"github.com/urmzd/adk/provider/ollama"
 	"github.com/urmzd/zoro/internal/events"
 	"github.com/urmzd/zoro/internal/models"
 	"github.com/urmzd/zoro/internal/tools"
@@ -25,7 +26,7 @@ When answering:
 - Use markdown formatting`
 
 type Agent struct {
-	sdkAgent    *agentsdk.Agent
+	sdkAgent    *adk.Agent
 	adapter     *ollama.Adapter
 	fastModel   string
 	events      *events.Store
@@ -37,8 +38,8 @@ type Agent struct {
 }
 
 func New(adapter *ollama.Adapter, webSearch *tools.WebSearchTool, searchKG *tools.SearchKnowledgeTool, storeKG *tools.StoreKnowledgeTool, fastModel string, e *events.Store) *Agent {
-	toolReg := agentsdk.NewToolRegistry(webSearch, searchKG, storeKG)
-	sdkAgent := agentsdk.NewAgent(agentsdk.AgentConfig{
+	toolReg := core.NewToolRegistry(webSearch, searchKG, storeKG)
+	sdkAgent := adk.NewAgent(adk.AgentConfig{
 		Name:         "zoro",
 		SystemPrompt: systemPrompt,
 		Provider:     adapter,
@@ -141,9 +142,9 @@ func (a *Agent) SendMessage(ctx context.Context, sessionID, content string) {
 	// Create per-session tools with group ID
 	searchKGScoped := a.searchKG.WithGroupID(sessionID)
 	storeKGScoped := a.storeKG.WithGroupID(sessionID)
-	toolReg := agentsdk.NewToolRegistry(a.webSearch, searchKGScoped, storeKGScoped)
+	toolReg := core.NewToolRegistry(a.webSearch, searchKGScoped, storeKGScoped)
 
-	sessionAgent := agentsdk.NewAgent(agentsdk.AgentConfig{
+	sessionAgent := adk.NewAgent(adk.AgentConfig{
 		Name:         "zoro",
 		SystemPrompt: systemPrompt,
 		Provider:     a.adapter,
@@ -157,34 +158,67 @@ func (a *Agent) SendMessage(ctx context.Context, sessionID, content string) {
 	var contentBuilder strings.Builder
 	var eventToolCalls []models.ToolCall
 
+	// Track active tool calls by ID for correlating start/end deltas
+	type activeCall struct {
+		ID   string
+		Name string
+		Args map[string]any
+	}
+	activeCalls := make(map[string]*activeCall)
+
 	for delta := range stream.Deltas() {
 		switch v := delta.(type) {
-		case agentsdk.TextContentDelta:
+		case core.TextContentDelta:
 			contentBuilder.WriteString(v.Content)
 			a.emit(sessionID, models.SSEEvent{
 				Type: models.EventTextDelta,
 				Data: map[string]string{"content": v.Content},
 			})
-		case agentsdk.ToolCallStartDelta:
+		case core.ToolCallStartDelta:
+			activeCalls[v.ID] = &activeCall{ID: v.ID, Name: v.Name}
 			a.emit(sessionID, models.SSEEvent{
 				Type: models.EventToolCallStart,
 				Data: map[string]string{"id": v.ID, "name": v.Name},
 			})
-		case agentsdk.ToolCallEndDelta:
-			result, _ := v.Arguments["result"].(string)
-			id, _ := v.Arguments["id"].(string)
-			name, _ := v.Arguments["name"].(string)
+		case core.ToolCallEndDelta:
+			// ToolCallEndDelta carries the LLM's parsed arguments.
+			// Find the active call and attach arguments for persistence.
+			for _, ac := range activeCalls {
+				if ac.Args == nil {
+					ac.Args = v.Arguments
+					break
+				}
+			}
+		case core.ToolExecEndDelta:
+			// ToolExecEndDelta carries the actual tool result.
+			ac := activeCalls[v.ToolCallID]
+			name := ""
+			if ac != nil {
+				name = ac.Name
+			}
+			result := v.Result
+			if v.Error != "" {
+				result = "error: " + v.Error
+			}
 			a.emit(sessionID, models.SSEEvent{
 				Type: models.EventToolCallResult,
-				Data: map[string]string{"id": id, "name": name, "result": result},
+				Data: map[string]string{"id": v.ToolCallID, "name": name, "result": result},
 			})
-			argsJSON, _ := json.Marshal(v.Arguments)
-			eventToolCalls = append(eventToolCalls, models.ToolCall{
-				ID:   id,
-				Name: name,
-				Arguments: string(argsJSON),
+			if ac != nil {
+				argsJSON, _ := json.Marshal(ac.Args)
+				eventToolCalls = append(eventToolCalls, models.ToolCall{
+					ID:        ac.ID,
+					Name:      ac.Name,
+					Arguments: string(argsJSON),
+				})
+				delete(activeCalls, v.ToolCallID)
+			}
+		case core.ErrorDelta:
+			a.emit(sessionID, models.SSEEvent{
+				Type: models.EventError,
+				Data: map[string]string{"message": v.Error.Error()},
 			})
-		case agentsdk.DoneDelta:
+		case core.DoneDelta:
 			a.emit(sessionID, models.SSEEvent{
 				Type: models.EventDone,
 				Data: nil,
@@ -254,29 +288,29 @@ Partial query: ` + query
 	return parseJSONArray(raw)
 }
 
-func buildSDKMessages(msgs []models.ChatMessage) []agentsdk.Message {
-	sdkMsgs := make([]agentsdk.Message, 0, len(msgs))
+func buildSDKMessages(msgs []models.ChatMessage) []core.Message {
+	sdkMsgs := make([]core.Message, 0, len(msgs))
 	for _, m := range msgs {
 		switch m.Role {
 		case "user":
-			sdkMsgs = append(sdkMsgs, agentsdk.NewUserMessage(m.Content))
+			sdkMsgs = append(sdkMsgs, core.NewUserMessage(m.Content))
 		case "assistant":
-			content := make([]agentsdk.AssistantContent, 0)
+			content := make([]core.AssistantContent, 0)
 			if m.Content != "" {
-				content = append(content, agentsdk.TextContent{Text: m.Content})
+				content = append(content, core.TextContent{Text: m.Content})
 			}
 			for _, tc := range m.ToolCalls {
 				var args map[string]any
 				json.Unmarshal([]byte(tc.Arguments), &args)
-				content = append(content, agentsdk.ToolUseContent{
+				content = append(content, core.ToolUseContent{
 					ID:        tc.ID,
 					Name:      tc.Name,
 					Arguments: args,
 				})
 			}
-			sdkMsgs = append(sdkMsgs, agentsdk.AssistantMessage{Content: content})
+			sdkMsgs = append(sdkMsgs, core.AssistantMessage{Content: content})
 		case "tool":
-			sdkMsgs = append(sdkMsgs, agentsdk.NewToolResultMessage("", m.Content))
+			sdkMsgs = append(sdkMsgs, core.NewToolResultMessage(core.ToolResultContent{Text: m.Content}))
 		}
 	}
 	return sdkMsgs
