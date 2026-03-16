@@ -9,7 +9,7 @@ for cmd in rustc cargo node ollama; do
         echo "ERROR: $cmd not found."
         case "$cmd" in
             rustc|cargo) echo "  Install Rust: https://rustup.rs" ;;
-            node)        echo "  Install Node.js 20+: https://nodejs.org" ;;
+            node)        echo "  Install Node.js 24+: https://nodejs.org" ;;
             ollama)      echo "  Install Ollama: https://ollama.ai" ;;
         esac
         exit 1

@@ -4,7 +4,7 @@ Privacy-first research agent that builds a personal knowledge graph on your mach
 
 ## Quick Start
 
-**Prerequisites:** [Ollama](https://ollama.ai), [Rust](https://rustup.rs), Node.js 20+, [Just](https://github.com/casey/just), Python 3.10+ (build-time, for SearXNG sidecar)
+**Prerequisites:** [Ollama](https://ollama.ai), [Rust](https://rustup.rs), Node.js 24+, [Just](https://github.com/casey/just), Python 3.10+ (build-time, for SearXNG sidecar)
 
 ```bash
 just setup   # install deps + build SearXNG + pull models (one-time)
