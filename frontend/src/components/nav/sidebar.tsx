@@ -3,8 +3,11 @@
 import {
   IconChevronLeft,
   IconChevronRight,
+  IconFileText,
   IconGraph,
+  IconHelp,
   IconMessageCirclePlus,
+  IconSettings,
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -13,7 +16,6 @@ import { createChatSession } from "@/app/lib/api";
 import { cn } from "@/lib/utils";
 import { SidebarHistory } from "./sidebar-history";
 import { SidebarKnowledge } from "./sidebar-knowledge";
-import { SidebarSettings } from "./sidebar-settings";
 
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(() => {
@@ -95,7 +97,12 @@ export function Sidebar() {
       {/* Bottom section */}
       <div className="mt-auto border-t border-border/50">
         {!collapsed && <SidebarKnowledge />}
-        {!collapsed && <SidebarSettings />}
+        {!collapsed && (
+          <div className="px-2 py-1 space-y-0.5">
+            <SidebarLink href="/logs" icon={<IconFileText className="h-4 w-4" />} label="Logs" />
+            <SidebarLink href="/help" icon={<IconHelp className="h-4 w-4" />} label="Help" />
+          </div>
+        )}
         {collapsed && (
           <div className="flex flex-col items-center gap-1 py-2">
             <Link
@@ -105,9 +112,43 @@ export function Sidebar() {
             >
               <IconGraph className="h-4 w-4" />
             </Link>
+            <Link
+              href="/logs"
+              className="p-2 text-muted-foreground hover:text-foreground rounded-md hover:bg-muted/50"
+              title="Logs"
+            >
+              <IconFileText className="h-4 w-4" />
+            </Link>
+            <Link
+              href="/help"
+              className="p-2 text-muted-foreground hover:text-foreground rounded-md hover:bg-muted/50"
+              title="Help"
+            >
+              <IconHelp className="h-4 w-4" />
+            </Link>
           </div>
         )}
       </div>
     </aside>
+  );
+}
+
+function SidebarLink({
+  href,
+  icon,
+  label,
+}: {
+  href: string;
+  icon: React.ReactNode;
+  label: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 w-full transition-colors"
+    >
+      {icon}
+      {label}
+    </Link>
   );
 }

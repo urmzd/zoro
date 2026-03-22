@@ -84,11 +84,11 @@ export function SidebarHistory() {
             {searchQuery ? "No matches" : "No sessions yet"}
           </p>
         ) : (
-          sessions.map((s) => (
+          sessions.filter((s) => s.id).map((s, i) => (
             <button
-              key={s.id}
+              key={s.id || `session-${i}`}
               type="button"
-              onClick={() => handleSelect(s.id ?? "")}
+              onClick={() => handleSelect(s.id)}
               className={cn(
                 "w-full text-left rounded-md px-2 py-2 transition-colors hover:bg-muted/50",
                 activeId === s.id && "bg-muted/70",
