@@ -10,6 +10,7 @@ export function useChatStream(sessionId: string | null) {
   const loadedSessionRef = useRef<string | null>(null);
   const actionsRef = useRef(useChatStore.getState());
   actionsRef.current = useChatStore.getState();
+  const mountedRef = useRef(true);
 
   // Load existing messages when navigating to a previous session
   useEffect(() => {
@@ -19,6 +20,7 @@ export function useChatStream(sessionId: string | null) {
 
     getChatSession(sessionId)
       .then((session) => {
+        if (!mountedRef.current) return;
         if (session.messages && session.messages.length > 0) {
           const mapped = session.messages.map((m) => ({
             role: m.role as "user" | "assistant" | "tool",
@@ -38,19 +40,27 @@ export function useChatStream(sessionId: string | null) {
       });
   }, [sessionId]);
 
-  // Cleanup listener on unmount
+  // Track mount state for cleanup
   useEffect(() => {
+    mountedRef.current = true;
     return () => {
+      mountedRef.current = false;
       if (cancelRef.current) {
         cancelRef.current();
         cancelRef.current = null;
+      }
+      // Reset streaming state on unmount so remount starts clean
+      const state = useChatStore.getState();
+      if (state.status === "streaming") {
+        state.finalizeTurn();
       }
     };
   }, []);
 
   const send = useCallback(
-    async (content: string) => {
+    (content: string) => {
       if (!sessionId || !content.trim()) return;
+      if (!mountedRef.current) return;
 
       const actions = actionsRef.current;
       actions.addUserMessage(content);
@@ -66,9 +76,11 @@ export function useChatStream(sessionId: string | null) {
         sessionId,
         content,
         (event: SSEEvent) => {
+          if (!mountedRef.current) return;
           processEvent(event.type, JSON.stringify(event.data), actionsRef.current);
         },
         (err) => {
+          if (!mountedRef.current) return;
           actionsRef.current.setError(err.message);
         },
       );

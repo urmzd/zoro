@@ -95,6 +95,31 @@ export async function getAutocompleteSuggestions(
   }
 }
 
+// ── Status & Logs ──────────────────────────────────────────────────
+
+export interface ServiceStatus {
+  surrealdb: boolean;
+  searxng: boolean;
+  ollama: boolean;
+}
+
+export async function getStatus(): Promise<ServiceStatus> {
+  const resp = await fetch(`${API_BASE}/status`);
+  if (!resp.ok) return { surrealdb: false, searxng: false, ollama: false };
+  return resp.json();
+}
+
+export async function getLogs(lines = 200): Promise<string> {
+  try {
+    const resp = await fetch(`${API_BASE}/logs?lines=${lines}`);
+    if (!resp.ok) return "";
+    const data = await resp.json();
+    return data.logs ?? "";
+  } catch {
+    return "";
+  }
+}
+
 // ── SSE helpers ─────────────────────────────────────────────────────
 
 export interface SSEEvent {
