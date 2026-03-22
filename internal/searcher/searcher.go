@@ -11,8 +11,6 @@ import (
 	"github.com/urmzd/zoro/internal/models"
 )
 
-const searxngURL = "http://127.0.0.1:8888"
-
 type searxngResponse struct {
 	Results []searxngResult `json:"results"`
 }
@@ -24,11 +22,13 @@ type searxngResult struct {
 }
 
 type Searcher struct {
-	http *http.Client
+	http    *http.Client
+	baseURL string
 }
 
-func New() *Searcher {
+func New(baseURL string) *Searcher {
 	return &Searcher{
+		baseURL: baseURL,
 		http: &http.Client{
 			Timeout: 15 * time.Second,
 		},
@@ -36,7 +36,7 @@ func New() *Searcher {
 }
 
 func (s *Searcher) Search(ctx context.Context, query string) ([]models.SearchResult, error) {
-	req, err := http.NewRequestWithContext(ctx, "GET", searxngURL+"/search", nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", s.baseURL+"/search", nil)
 	if err != nil {
 		return nil, fmt.Errorf("create search request: %w", err)
 	}
