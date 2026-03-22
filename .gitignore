@@ -24,6 +24,9 @@ Thumbs.db
 # Build artifacts
 build/bin/
 dist/
+cmd/desktop/assets/
+!cmd/desktop/assets/.gitkeep
+/zoro-desktop
 
 # Docker volumes
 zoro-data/
