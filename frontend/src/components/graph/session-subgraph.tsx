@@ -1,12 +1,8 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Entity, GraphData, Relation } from "@/app/lib/types";
-
-const ForceGraph2D = dynamic(() => import("react-force-graph-2d"), {
-  ssr: false,
-});
+import { LazyForceGraph2D as ForceGraph2D } from "@/components/graph/lazy-force-graph";
 
 const NODE_COLORS: Record<string, string> = {
   entity: "#6366f1",
@@ -45,7 +41,7 @@ export function SessionSubgraph({ entities, relations, graphData }: SessionSubgr
   }, [entities, graphData]);
 
   const data = useMemo(() => {
-    if (graphData && graphData.nodes.length > 0) {
+    if (graphData && graphData.nodes && graphData.nodes.length > 0) {
       return {
         nodes: graphData.nodes.map((n) => ({
           id: n.id,
@@ -53,7 +49,7 @@ export function SessionSubgraph({ entities, relations, graphData }: SessionSubgr
           type: n.type || "entity",
           val: 3,
         })),
-        links: graphData.edges.map((e) => ({
+        links: (graphData.edges ?? []).map((e) => ({
           source: e.source,
           target: e.target,
           type: e.type,

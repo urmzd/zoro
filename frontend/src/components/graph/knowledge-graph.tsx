@@ -1,15 +1,11 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getKnowledgeGraph, getNodeDetail } from "@/app/lib/api";
 import { GraphControls } from "@/components/graph/graph-controls";
+import { LazyForceGraph2D as ForceGraph2D } from "@/components/graph/lazy-force-graph";
 import { NodeDetailPanel } from "@/components/graph/node-detail-panel";
 import { useKnowledgeStore } from "@/lib/stores/knowledge-store";
-
-const ForceGraph2D = dynamic(() => import("react-force-graph-2d"), {
-  ssr: false,
-});
 
 const NODE_COLORS: Record<string, string> = {
   entity: "#6366f1",
@@ -71,13 +67,13 @@ export function KnowledgeGraph() {
 
   const data = graphData
     ? {
-        nodes: graphData.nodes.map((n) => ({
+        nodes: (graphData.nodes ?? []).map((n) => ({
           id: n.id,
           name: n.name,
           type: n.type || "entity",
           val: 3,
         })),
-        links: graphData.edges.map((e) => ({
+        links: (graphData.edges ?? []).map((e) => ({
           source: e.source,
           target: e.target,
           type: e.type,
