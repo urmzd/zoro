@@ -6,19 +6,17 @@ import { ChatView } from "@/components/chat/chat-view";
 
 function ChatContent() {
   const searchParams = useSearchParams();
-
   const sessionId = searchParams.get("id") || "";
-  const initialQuery = searchParams.get("q") || undefined;
 
   if (!sessionId) {
     return (
-      <div className="flex h-screen items-center justify-center text-muted-foreground">
+      <div className="flex h-full items-center justify-center text-muted-foreground">
         Select a chat session or start a new one.
       </div>
     );
   }
 
-  return <ChatView sessionId={sessionId} initialQuery={initialQuery} />;
+  return <ChatView sessionId={sessionId} />;
 }
 
 export default function ChatPage() {

@@ -26,9 +26,12 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <div className="flex h-screen">
-          <Sidebar />
-          <main className="flex-1 overflow-auto">{children}</main>
+        <div className="flex flex-col h-screen">
+          <div className="h-8 shrink-0 bg-background/50 backdrop-blur-sm" style={{ WebkitAppRegion: "drag" } as React.CSSProperties} />
+          <div className="flex flex-1 min-h-0">
+            <Sidebar />
+            <main className="flex-1 overflow-auto">{children}</main>
+          </div>
         </div>
       </body>
     </html>

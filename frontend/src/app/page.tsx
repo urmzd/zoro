@@ -11,6 +11,7 @@ import {
 } from "@/app/lib/api";
 import { KnowledgeResults } from "@/components/chat/knowledge-results";
 import { BackgroundBeams } from "@/components/ui/background-beams";
+import { useChatStore } from "@/lib/stores/chat-store";
 
 type Status =
   | "idle"
@@ -135,7 +136,9 @@ export default function Home() {
       setStatus("starting_chat");
       try {
         const { id } = await createChatSession();
-        router.push(`/chat?id=${id}&q=${encodeURIComponent(q)}`);
+        useChatStore.getState().reset();
+        useChatStore.getState().setPendingQuery(q);
+        router.push(`/chat?id=${id}`);
       } catch {
         setStatus("idle");
       }
