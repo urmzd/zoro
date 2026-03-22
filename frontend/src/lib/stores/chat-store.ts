@@ -4,6 +4,8 @@ import { create } from "zustand";
 import type { ChatMessage, ChatState, ToolCall } from "@/app/lib/types";
 
 interface ChatStore extends ChatState {
+  pendingQuery: string | null;
+  setPendingQuery: (query: string | null) => void;
   addUserMessage: (content: string) => void;
   appendAssistantContent: (content: string) => void;
   addToolCallStart: (toolCall: ToolCall) => void;
@@ -25,6 +27,9 @@ const initialState: ChatState = {
 
 export const useChatStore = create<ChatStore>((set) => ({
   ...initialState,
+  pendingQuery: null,
+
+  setPendingQuery: (query) => set({ pendingQuery: query }),
 
   addUserMessage: (content) =>
     set((s) => ({
