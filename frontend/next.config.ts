@@ -1,14 +1,21 @@
 import type { NextConfig } from "next";
 
+const isDesktop = process.env.NEXT_BUILD_TARGET === "desktop";
+
 const nextConfig: NextConfig = {
-  async rewrites() {
-    return [
-      {
-        source: "/api/:path*",
-        destination: "http://localhost:8080/api/:path*",
-      },
-    ];
-  },
+  ...(isDesktop ? { output: "export", distDir: "out" } : {}),
+  ...(!isDesktop
+    ? {
+        async rewrites() {
+          return [
+            {
+              source: "/api/:path*",
+              destination: "http://localhost:8080/api/:path*",
+            },
+          ];
+        },
+      }
+    : {}),
 };
 
 export default nextConfig;
