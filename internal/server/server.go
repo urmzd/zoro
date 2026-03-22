@@ -8,11 +8,19 @@ import (
 	"github.com/urmzd/zoro/internal/orchestrator"
 )
 
+// ServiceStatus tracks readiness of external services.
+type ServiceStatus struct {
+	SurrealDB bool `json:"surrealdb"`
+	SearXNG   bool `json:"searxng"`
+	Ollama    bool `json:"ollama"`
+}
+
 type Server struct {
 	agent        *agent.Agent
 	orchestrator *orchestrator.Orchestrator
 	graph        kgtypes.Graph
 	adapter      *ollama.Adapter
+	services     *ServiceStatus
 }
 
 func New(a *agent.Agent, o *orchestrator.Orchestrator, g kgtypes.Graph, ad *ollama.Adapter) *Server {
@@ -21,7 +29,13 @@ func New(a *agent.Agent, o *orchestrator.Orchestrator, g kgtypes.Graph, ad *olla
 		orchestrator: o,
 		graph:        g,
 		adapter:      ad,
+		services:     &ServiceStatus{},
 	}
+}
+
+// SetServiceStatus updates the readiness state of services.
+func (s *Server) SetServiceStatus(status ServiceStatus) {
+	*s.services = status
 }
 
 func (s *Server) Setup() *echo.Echo {
@@ -46,6 +60,8 @@ func (s *Server) Setup() *echo.Echo {
 
 	api.POST("/intent/classify", s.ClassifyIntent)
 	api.GET("/autocomplete", s.GetAutocomplete)
+	api.GET("/status", s.GetStatus)
+	api.GET("/logs", s.GetLogs)
 
 	return e
 }
