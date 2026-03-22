@@ -2,67 +2,109 @@
 
 Privacy-first research agent that builds a personal knowledge graph on your machine. Searches the web, extracts entities and relationships using local LLMs, and stores everything locally — your data never leaves your machine.
 
+## Architecture
+
+Zoro runs in two modes: **web** (development) and **desktop** (production).
+
+```
+Desktop mode (Wails native app)
+  ├── Embedded Next.js frontend (static export in WebView)
+  ├── Go backend (Echo v4, in-process via Wails AssetServer)
+  ├── Managed SurrealDB subprocess (auto-downloaded, port 8765)
+  ├── Managed SearXNG subprocess (pip-installed venv, port 8888)
+  └── Ollama (external — must be installed separately)
+
+Web mode (development)
+  ├── Next.js 16 frontend (port 3000, proxies /api/* to backend)
+  ├── Go backend (Echo v4, port 8080)
+  ├── SurrealDB via Docker (port 8000)
+  ├── SearXNG via Docker (port 8888)
+  └── Ollama (external)
+```
+
+**SDKs**:
+- `github.com/urmzd/adk` — agent loop, provider interface, tool registry, Ollama adapter
+- `github.com/urmzd/kgdk` — knowledge graph interface, SurrealDB store, extraction pipeline, embedder
+
+## Prerequisites
+
+### Desktop app
+
+- [Go](https://go.dev) 1.25+
+- [Node.js](https://nodejs.org) 22+
+- [Ollama](https://ollama.ai)
+- Python 3.10+ (for SearXNG auto-install)
+- [Just](https://github.com/casey/just)
+
+No Docker required. SurrealDB is downloaded on first launch; SearXNG is installed into a local Python venv automatically.
+
+### Web development
+
+- Everything above, plus [Docker](https://docs.docker.com/get-docker/) with Docker Compose
+
 ## Quick Start
 
-**Prerequisites:** [Ollama](https://ollama.ai), [Rust](https://rustup.rs), Node.js 24+, [Just](https://github.com/casey/just), Python 3.10+ (build-time, for SearXNG sidecar)
+### Desktop app (recommended)
 
 ```bash
-just setup   # install deps + build SearXNG + pull models (one-time)
-just dev     # launch the app
+just setup           # install frontend/Go deps, pull Ollama models
+just build-desktop   # build the native desktop binary
+./zoro-desktop       # launch (first run downloads SurrealDB + installs SearXNG)
 ```
 
-That's it. Ollama starts automatically if it isn't already running. SearXNG is bundled as a sidecar and starts/stops with the app — no Docker needed.
-
-## Build
+### Web development
 
 ```bash
-just build
+just setup   # install deps, start Docker services, pull Ollama models
+just dev     # start all services: Ollama, Docker, Go backend, Next.js frontend
 ```
-
-Produces a native installer for your platform (`.dmg` / `.msi` / `.AppImage`).
-
-## How It Works
-
-```
-Tauri Desktop App
-├── Rust Backend
-│   ├── Embedded SurrealDB (RocksDB — no separate server)
-│   ├── Ollama client (streaming chat + embeddings)
-│   ├── SearXNG sidecar (bundled, auto-managed)
-│   ├── Agent loop (chat with tool use)
-│   └── Tools: web_search, search_knowledge, store_knowledge
-└── React Frontend (webview)
-    ├── Chat with streaming markdown
-    ├── Knowledge graph visualization
-    └── Research explorer
-```
-
-External dependency: Ollama only. SearXNG is bundled as a sidecar binary.
-
-## Configuration
-
-Environment variables (all optional — defaults work out of the box):
-
-| Variable           | Default                  | Description               |
-|--------------------|--------------------------|---------------------------|
-| `OLLAMA_HOST`      | `http://localhost:11434` | Ollama server URL         |
-| `OLLAMA_MODEL`     | `qwen3.5:4b`            | Main LLM model            |
-| `OLLAMA_FAST_MODEL`| `qwen3.5:0.8b`          | Fast model (autocomplete) |
-| `EMBEDDING_MODEL`  | `nomic-embed-text`       | Embedding model           |
-
-Data lives in your OS data directory (`~/Library/Application Support/zoro/` on macOS).
 
 ## Commands
 
 ```
-just setup           # First-time setup (includes SearXNG build)
-just dev             # Run in dev mode (SearXNG starts automatically)
-just build-searxng   # Rebuild SearXNG sidecar binary
-just build           # Production build
-just check           # Lint + test everything
-just pull <model>    # Download an Ollama model
-just upgrade-ollama  # Upgrade Ollama
+just setup           First-time setup (deps + models)
+just dev             Web dev mode (Docker + Go + Next.js)
+just build           Production web build
+just stop            Stop Docker services
+just build-desktop   Build native desktop app (Wails)
+just dev-desktop     Run desktop app in dev mode
+just check           Lint and typecheck (Go vet + Biome + tsc)
+just generate        Regenerate frontend API client from OpenAPI spec
+just pull <model>    Download an Ollama model
 ```
+
+## Configuration
+
+All environment variables are optional. Defaults work out of the box.
+
+| Variable            | Default                  | Description                      |
+|---------------------|--------------------------|----------------------------------|
+| `OLLAMA_HOST`       | `http://localhost:11434` | Ollama server URL                |
+| `OLLAMA_MODEL`      | `qwen3.5:4b`             | Main LLM for reasoning           |
+| `OLLAMA_FAST_MODEL` | `qwen3.5:0.8b`           | Fast model for lightweight tasks |
+| `EMBEDDING_MODEL`   | `nomic-embed-text`       | Model used for embeddings        |
+| `SURREALDB_URL`     | (managed subprocess)     | Set to use external SurrealDB    |
+| `SEARXNG_URL`       | (managed subprocess)     | Set to use external SearXNG      |
+| `ZORO_DATA_DIR`     | `~/.config/zoro`         | App data directory               |
+
+In web mode (`just dev`), `SURREALDB_URL` defaults to `ws://localhost:8000` and `SEARXNG_URL` to `http://127.0.0.1:8888` (Docker).
+
+In desktop mode, both are managed as subprocesses unless overridden via env vars.
+
+## Desktop App Details
+
+The desktop app bundles everything into a single workflow:
+
+1. **SurrealDB** binary is downloaded from GitHub releases on first launch (~25MB) and stored in `$ZORO_DATA_DIR/bin/`. Data persists in `$ZORO_DATA_DIR/data/zoro.db`.
+2. **SearXNG** is installed via `pip` into a Python venv at `$ZORO_DATA_DIR/searxng-venv/` on first launch. Subsequent launches reuse the cached venv.
+3. **Frontend** is embedded as a static export inside the Go binary via `go:embed`.
+4. **API requests** from the WebView route through the Wails AssetServer to the Echo handler — no network ports needed for the frontend.
+
+Logs are written to `$ZORO_DATA_DIR/zoro.log` and available via `GET /api/logs`.
+
+## API
+
+The OpenAPI spec at `api/openapi.yaml` is the single source of truth for backend types. Run `just generate` to regenerate the frontend API client after changes.
 
 ## Third-Party Licenses
 
