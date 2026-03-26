@@ -1,8 +1,15 @@
 # ── One-command setup ─────────────────────────────────────────────────
 # Get from zero to running with: just setup && just dev
 
+download:
+    echo "Pulling LLM models (this may take a few minutes)..."
+    ollama pull qwen3.5:4b
+    ollama pull qwen3.5:0.8b
+    ollama pull nomic-embed-text
+
+
 # Full first-time setup: install deps, pull models, start services
-setup:
+setup: download
     #!/usr/bin/env bash
     set -euo pipefail
 
@@ -14,11 +21,6 @@ setup:
 
     echo "Starting SurrealDB + SearXNG via Docker..."
     docker compose up -d
-
-    echo "Pulling LLM models (this may take a few minutes)..."
-    ollama pull qwen3.5:4b
-    ollama pull qwen3.5:0.8b
-    ollama pull nomic-embed-text
 
     echo ""
     echo "Done! Run 'just dev' to start."
