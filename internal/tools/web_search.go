@@ -2,26 +2,41 @@ package tools
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"strings"
+	"log"
 
 	"github.com/urmzd/adk/core"
+	"github.com/urmzd/kgdk/kgtypes"
 	"github.com/urmzd/zoro/internal/searcher"
 )
+
+type searchResultJSON struct {
+	Index   int    `json:"index"`
+	Title   string `json:"title"`
+	URL     string `json:"url"`
+	Snippet string `json:"snippet"`
+}
 
 // WebSearchTool implements core.Tool for web searching.
 type WebSearchTool struct {
 	searcher *searcher.Searcher
+	graph    kgtypes.Graph
+	groupID  string
 }
 
-func NewWebSearchTool(s *searcher.Searcher) *WebSearchTool {
-	return &WebSearchTool{searcher: s}
+func NewWebSearchTool(s *searcher.Searcher, graph kgtypes.Graph) *WebSearchTool {
+	return &WebSearchTool{searcher: s, graph: graph}
+}
+
+func (t *WebSearchTool) WithGroupID(id string) *WebSearchTool {
+	return &WebSearchTool{searcher: t.searcher, graph: t.graph, groupID: id}
 }
 
 func (t *WebSearchTool) Definition() core.ToolDef {
 	return core.ToolDef{
 		Name:        "web_search",
-		Description: "Search the web for current information on a topic. Returns up to 5 results with titles, URLs, and snippets.",
+		Description: "Search the web for current information on a topic. Returns a JSON array of results with index, title, url, and snippet. Use the index numbers as citation references [1], [2], etc.",
 		Parameters: core.ParameterSchema{
 			Type:     "object",
 			Required: []string{"query"},
@@ -43,21 +58,48 @@ func (t *WebSearchTool) Execute(ctx context.Context, args map[string]any) (strin
 		return "", err
 	}
 
-	var b strings.Builder
 	limit := len(results)
 	if limit > 5 {
 		limit = 5
 	}
+
+	items := make([]searchResultJSON, 0, limit)
 	for i, r := range results[:limit] {
 		snippet := r.Snippet
 		if len(snippet) > 200 {
 			snippet = snippet[:200] + "..."
 		}
-		fmt.Fprintf(&b, "%d. %s\n   %s\n   %s\n\n", i+1, r.Title, r.URL, snippet)
+		items = append(items, searchResultJSON{
+			Index:   i + 1,
+			Title:   r.Title,
+			URL:     r.URL,
+			Snippet: snippet,
+		})
 	}
 
-	if b.Len() == 0 {
-		return "No results found.", nil
+	if len(items) == 0 {
+		return "[]", nil
 	}
-	return b.String(), nil
+
+	// Auto-ingest results into knowledge graph
+	if t.graph != nil {
+		for _, item := range items {
+			body := fmt.Sprintf("Title: %s\nURL: %s\nSnippet: %s", item.Title, item.URL, item.Snippet)
+			input := &kgtypes.EpisodeInput{
+				Name:    fmt.Sprintf("%s - Result %d", query, item.Index),
+				Body:    body,
+				Source:  item.URL,
+				GroupID: t.groupID,
+			}
+			if _, err := t.graph.IngestEpisode(ctx, input); err != nil {
+				log.Printf("[web_search] auto-ingest error (result %d): %v", item.Index, err)
+			}
+		}
+	}
+
+	out, err := json.Marshal(items)
+	if err != nil {
+		return "", fmt.Errorf("web_search: marshal results: %w", err)
+	}
+	return string(out), nil
 }
