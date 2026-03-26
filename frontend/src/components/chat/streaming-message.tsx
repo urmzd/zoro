@@ -1,7 +1,7 @@
 "use client";
 
-import { code } from "@streamdown/code";
 import { useMemo } from "react";
+import { code } from "@streamdown/code";
 import { Streamdown } from "streamdown";
 import type { ToolCall } from "@/app/lib/types";
 import { injectCitationLinks } from "./citation-text";
