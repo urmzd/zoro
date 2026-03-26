@@ -15,8 +15,11 @@ type AppConfig struct {
 	OllamaFastModel string
 	EmbeddingModel  string
 	SurrealDBURL    string // empty = managed subprocess
+	SurrealDBUser   string
+	SurrealDBPass   string
 	SearXNGURL      string // empty = managed subprocess
 	DataDir         string
+	Port            string
 }
 
 func Load() *AppConfig {
@@ -26,8 +29,11 @@ func Load() *AppConfig {
 		OllamaFastModel: envOr("OLLAMA_FAST_MODEL", "qwen3.5:0.8b"),
 		EmbeddingModel:  envOr("EMBEDDING_MODEL", "nomic-embed-text"),
 		SurrealDBURL:    os.Getenv("SURREALDB_URL"),
+		SurrealDBUser:   envOr("SURREALDB_USER", "root"),
+		SurrealDBPass:   envOr("SURREALDB_PASS", "root"),
 		SearXNGURL:      os.Getenv("SEARXNG_URL"),
 		DataDir:         envOr("ZORO_DATA_DIR", defaultDataDir()),
+		Port:            envOr("PORT", "8080"),
 	}
 }
 

@@ -15,9 +15,9 @@ export function ResearchView({ sessionId, query }: ResearchViewProps) {
   const state = useResearchStream(sessionId, query);
 
   return (
-    <div className="flex h-screen gap-4 p-4">
+    <div className="flex flex-col lg:flex-row h-screen gap-4 p-4 overflow-y-auto lg:overflow-hidden">
       {/* Left panel: Timeline + Summary */}
-      <div className="w-1/2 flex flex-col gap-4 overflow-hidden">
+      <div className="w-full lg:w-1/2 flex flex-col gap-4 overflow-hidden">
         <div className="flex items-center gap-3 shrink-0">
           <h2 className="text-lg font-semibold truncate">{state.query}</h2>
           <StatusBadge status={state.status} />
@@ -53,7 +53,7 @@ export function ResearchView({ sessionId, query }: ResearchViewProps) {
       </div>
 
       {/* Right panel: Graph + Entities */}
-      <div className="w-1/2 flex flex-col gap-4 overflow-hidden">
+      <div className="w-full lg:w-1/2 flex flex-col gap-4 overflow-hidden">
         <div className="flex-1 min-h-0 rounded-lg border border-border overflow-hidden">
           <SessionSubgraph
             entities={state.entities}
@@ -68,7 +68,7 @@ export function ResearchView({ sessionId, query }: ResearchViewProps) {
             <h3 className="text-sm font-medium text-muted-foreground mb-2">
               Entities ({state.entities.length})
             </h3>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {state.entities.slice(0, 10).map((entity) => (
                 <EntityCard key={entity.uuid} entity={entity} />
               ))}

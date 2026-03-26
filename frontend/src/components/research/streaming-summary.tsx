@@ -1,20 +1,26 @@
 "use client";
 
+import { code } from "@streamdown/code";
 import { useEffect, useRef } from "react";
+import { Streamdown } from "streamdown";
 
 interface StreamingSummaryProps {
   content: string;
   isStreaming: boolean;
 }
 
+// biome-ignore lint/suspicious/noExplicitAny: streamdown plugin types
+const plugins = { code } as any;
+
 export function StreamingSummary({ content, isStreaming }: StreamingSummaryProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: content triggers scroll on new streaming data
   useEffect(() => {
     if (containerRef.current && isStreaming) {
       containerRef.current.scrollTop = containerRef.current.scrollHeight;
     }
-  }, [isStreaming]);
+  }, [isStreaming, content]);
 
   if (!content && !isStreaming) {
     return (
@@ -25,10 +31,15 @@ export function StreamingSummary({ content, isStreaming }: StreamingSummaryProps
   }
 
   return (
-    <div ref={containerRef} className="prose prose-invert prose-sm max-w-none">
-      <div className="whitespace-pre-wrap">{content}</div>
-      {isStreaming && (
-        <span className="inline-block h-4 w-0.5 bg-indigo-400 animate-pulse ml-0.5" />
+    <div ref={containerRef} className="prose prose-invert prose-sm max-w-none overflow-y-auto">
+      {isStreaming ? (
+        <Streamdown plugins={plugins} caret="block" isAnimating>
+          {content}
+        </Streamdown>
+      ) : (
+        <Streamdown mode="static" plugins={plugins}>
+          {content}
+        </Streamdown>
       )}
     </div>
   );

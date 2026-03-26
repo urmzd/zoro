@@ -23,6 +23,7 @@ export function useChatStream(sessionId: string | null) {
         if (!mountedRef.current) return;
         if (session.messages && session.messages.length > 0) {
           const mapped = session.messages.map((m) => ({
+            id: m.id || crypto.randomUUID(),
             role: m.role as "user" | "assistant" | "tool",
             content: m.content ?? "",
             toolCalls: m.toolCalls?.map((tc) => ({

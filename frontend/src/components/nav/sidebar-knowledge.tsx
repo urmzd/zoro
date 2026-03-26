@@ -1,6 +1,5 @@
 "use client";
 
-import { IconGraph } from "@tabler/icons-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -14,13 +13,18 @@ export function SidebarKnowledge() {
       <Link
         href="/knowledge"
         className={cn(
-          "flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors",
+          "flex items-center gap-2.5 rounded-md px-2.5 py-1.5 transition-all duration-200",
           isActive
-            ? "bg-muted text-foreground"
-            : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+            ? "text-[#ba9eff] bg-[#0f1930] font-bold"
+            : "text-[#dee5ff]/60 hover:text-[#dee5ff] hover:bg-[#1f2b49]",
         )}
       >
-        <IconGraph className="h-4 w-4" />
+        <span
+          className="material-symbols-outlined text-[18px]"
+          style={isActive ? { fontVariationSettings: "'FILL' 1" } : undefined}
+        >
+          hub
+        </span>
         Knowledge Graph
       </Link>
     </div>

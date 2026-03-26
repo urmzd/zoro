@@ -20,22 +20,19 @@ type Server struct {
 	orchestrator *orchestrator.Orchestrator
 	graph        kgtypes.Graph
 	adapter      *ollama.Adapter
-	services     *ServiceStatus
+	ollamaHost   string
+	searxngURL   string
 }
 
-func New(a *agent.Agent, o *orchestrator.Orchestrator, g kgtypes.Graph, ad *ollama.Adapter) *Server {
+func New(a *agent.Agent, o *orchestrator.Orchestrator, g kgtypes.Graph, ad *ollama.Adapter, ollamaHost, searxngURL string) *Server {
 	return &Server{
 		agent:        a,
 		orchestrator: o,
 		graph:        g,
 		adapter:      ad,
-		services:     &ServiceStatus{},
+		ollamaHost:   ollamaHost,
+		searxngURL:   searxngURL,
 	}
-}
-
-// SetServiceStatus updates the readiness state of services.
-func (s *Server) SetServiceStatus(status ServiceStatus) {
-	*s.services = status
 }
 
 func (s *Server) Setup() *echo.Echo {

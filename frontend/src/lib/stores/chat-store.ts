@@ -3,6 +3,10 @@
 import { create } from "zustand";
 import type { ChatMessage, ChatState, ToolCall } from "@/app/lib/types";
 
+function msgId(): string {
+  return crypto.randomUUID();
+}
+
 interface ChatStore extends ChatState {
   pendingQuery: string | null;
   setPendingQuery: (query: string | null) => void;
@@ -33,7 +37,7 @@ export const useChatStore = create<ChatStore>((set) => ({
 
   addUserMessage: (content) =>
     set((s) => ({
-      messages: [...s.messages, { role: "user", content }],
+      messages: [...s.messages, { id: msgId(), role: "user", content }],
       currentAssistantContent: "",
       currentToolCalls: [],
       status: "streaming",
@@ -58,6 +62,7 @@ export const useChatStore = create<ChatStore>((set) => ({
   finalizeTurn: () =>
     set((s) => {
       const assistantMsg: ChatMessage = {
+        id: msgId(),
         role: "assistant",
         content: s.currentAssistantContent,
         toolCalls: s.currentToolCalls.length > 0 ? s.currentToolCalls : undefined,
@@ -76,7 +81,7 @@ export const useChatStore = create<ChatStore>((set) => ({
 
   loadMessages: (messages) =>
     set({
-      messages,
+      messages: messages.map((m) => ({ ...m, id: m.id || msgId() })),
       currentAssistantContent: "",
       currentToolCalls: [],
       status: "idle",

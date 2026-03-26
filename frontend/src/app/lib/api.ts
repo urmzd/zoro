@@ -83,10 +83,10 @@ export async function classifyIntent(
 
 export async function getAutocompleteSuggestions(
   q: string,
-  _signal?: AbortSignal,
+  signal?: AbortSignal,
 ): Promise<string[]> {
   try {
-    const resp = await fetch(`${API_BASE}/autocomplete?q=${encodeURIComponent(q)}`);
+    const resp = await fetch(`${API_BASE}/autocomplete?q=${encodeURIComponent(q)}`, { signal });
     if (!resp.ok) return [];
     const data = await resp.json();
     return data.suggestions ?? [];

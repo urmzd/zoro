@@ -1,6 +1,5 @@
 "use client";
 
-import { IconGraph, IconMessage } from "@tabler/icons-react";
 import { useEffect, useRef, useState } from "react";
 import { useChatStream } from "@/app/lib/use-chat-stream";
 import { GraphErrorBoundary } from "@/components/graph/graph-error-boundary";
@@ -25,7 +24,6 @@ export function ChatView({ sessionId }: ChatViewProps) {
   const sentInitial = useRef(false);
   const [activeTab, setActiveTab] = useState<Tab>("chat");
 
-  // Consume pending query from store (set by landing page before navigation)
   useEffect(() => {
     if (sentInitial.current || !sessionId) return;
     const pending = useChatStore.getState().pendingQuery;
@@ -35,7 +33,7 @@ export function ChatView({ sessionId }: ChatViewProps) {
     send(pending);
   }, [sessionId, send]);
 
-  // Auto-scroll on new content
+  // biome-ignore lint/correctness/useExhaustiveDependencies: triggers scroll when messages/streaming content changes
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -46,45 +44,45 @@ export function ChatView({ sessionId }: ChatViewProps) {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Tab bar */}
-      <div className="flex items-center gap-1 px-4 py-2 border-b border-border/50">
-        <button
-          type="button"
-          onClick={() => setActiveTab("chat")}
-          className={cn(
-            "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
-            activeTab === "chat"
-              ? "bg-muted text-foreground"
-              : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
-          )}
-        >
-          <IconMessage className="h-4 w-4" />
-          Chat
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab("graph")}
-          className={cn(
-            "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
-            activeTab === "graph"
-              ? "bg-muted text-foreground"
-              : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
-          )}
-        >
-          <IconGraph className="h-4 w-4" />
-          Knowledge Graph
-        </button>
+      {/* Tab toggle */}
+      <div className="flex items-center px-8 h-12 shrink-0">
+        <div className="flex items-center p-1 bg-[#050a18] rounded-xl">
+          <button
+            type="button"
+            onClick={() => setActiveTab("chat")}
+            className={cn(
+              "px-4 py-1.5 text-xs font-bold rounded-lg transition-colors",
+              activeTab === "chat"
+                ? "bg-[#0f1930] text-[#ba9eff]"
+                : "text-[#a3aac4] hover:text-[#dee5ff]",
+            )}
+          >
+            Chat
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("graph")}
+            className={cn(
+              "px-4 py-1.5 text-xs font-medium rounded-lg transition-colors",
+              activeTab === "graph"
+                ? "bg-[#0f1930] text-[#ba9eff]"
+                : "text-[#a3aac4] hover:text-[#dee5ff]",
+            )}
+          >
+            Knowledge Graph
+          </button>
+        </div>
       </div>
 
       {/* Content */}
       <div className="flex-1 min-h-0">
         {activeTab === "chat" ? (
           <div className="flex flex-col h-full">
-            {/* Message thread */}
-            <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-6">
-              <div className="max-w-3xl mx-auto space-y-4">
-                {messages.map((msg, i) => (
-                  <ChatMessage key={`msg-${i}`} message={msg} />
+            {/* Messages */}
+            <div ref={scrollRef} className="flex-1 overflow-y-auto px-8 py-12">
+              <div className="max-w-5xl mx-auto w-full space-y-12">
+                {messages.map((msg) => (
+                  <ChatMessage key={msg.id} message={msg} />
                 ))}
 
                 {isStreaming && (
@@ -95,7 +93,7 @@ export function ChatView({ sessionId }: ChatViewProps) {
                 )}
 
                 {error && (
-                  <div className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-2 text-sm text-destructive">
+                  <div className="rounded-xl glass-card px-4 py-3 text-sm text-[#ff6e84] border border-[#ff6e84]/20">
                     {error}
                   </div>
                 )}
@@ -103,8 +101,8 @@ export function ChatView({ sessionId }: ChatViewProps) {
             </div>
 
             {/* Input */}
-            <div className="border-t border-border px-4 py-3">
-              <div className="max-w-3xl mx-auto">
+            <div className="p-8 pt-0">
+              <div className="max-w-4xl mx-auto">
                 <ChatInput onSend={send} onStop={stop} isStreaming={isStreaming} />
               </div>
             </div>

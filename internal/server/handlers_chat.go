@@ -10,7 +10,7 @@ import (
 
 func (s *Server) CreateSession(c echo.Context) error {
 	log.Println("[http] CreateSession")
-	session, err := s.agent.CreateSession()
+	session, err := s.agent.CreateSession(c.Request().Context())
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -19,7 +19,7 @@ func (s *Server) CreateSession(c echo.Context) error {
 
 func (s *Server) ListSessions(c echo.Context) error {
 	log.Println("[http] ListSessions")
-	sessions, err := s.agent.ListSessions()
+	sessions, err := s.agent.ListSessions(c.Request().Context())
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -30,7 +30,7 @@ func (s *Server) SearchSessions(c echo.Context) error {
 	q := c.QueryParam("q")
 	log.Printf("[http] SearchSessions q=%q", q)
 
-	sessions, err := s.agent.ListSessions()
+	sessions, err := s.agent.ListSessions(c.Request().Context())
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -50,7 +50,7 @@ func (s *Server) SearchSessions(c echo.Context) error {
 func (s *Server) GetSession(c echo.Context) error {
 	id := c.Param("id")
 	log.Printf("[http] GetSession id=%s", id)
-	session, err := s.agent.GetSession(id)
+	session, err := s.agent.GetSession(c.Request().Context(), id)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}

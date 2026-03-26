@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { getKnowledgeGraph, getNodeDetail } from "@/app/lib/api";
 import { GraphControls } from "@/components/graph/graph-controls";
 import { LazyForceGraph2D as ForceGraph2D } from "@/components/graph/lazy-force-graph";
@@ -8,14 +8,14 @@ import { NodeDetailPanel } from "@/components/graph/node-detail-panel";
 import { useKnowledgeStore } from "@/lib/stores/knowledge-store";
 
 const NODE_COLORS: Record<string, string> = {
-  entity: "#6366f1",
-  person: "#3b82f6",
-  organization: "#a855f7",
+  entity: "#ba9eff",
+  person: "#699cff",
+  organization: "#a27cff",
   concept: "#22c55e",
-  location: "#f97316",
+  location: "#ff716a",
   episode: "#22c55e",
-  community: "#a855f7",
-  source: "#f97316",
+  community: "#a27cff",
+  source: "#ff716a",
 };
 
 export function KnowledgeGraph() {
@@ -107,7 +107,7 @@ export function KnowledgeGraph() {
         ctx.font = `${fontSize}px sans-serif`;
         ctx.textAlign = "center";
         ctx.textBaseline = "top";
-        ctx.fillStyle = "rgba(255,255,255,0.8)";
+        ctx.fillStyle = "rgba(222,229,255,0.8)";
         ctx.fillText(label, node.x, node.y + r + 2);
       }
     },
@@ -117,32 +117,56 @@ export function KnowledgeGraph() {
   return (
     <div className="relative h-full w-full">
       {/* Stats overlay */}
-      <div className="absolute top-4 right-4 z-10 rounded-lg border border-border/50 bg-background/80 backdrop-blur-md px-3 py-2 text-xs text-muted-foreground">
-        {data.nodes.length} nodes / {data.links.length} edges
+      <div className="absolute top-6 left-6 z-10 p-4 bg-[#050a18]/60 backdrop-blur-md rounded-xl border border-[#40485d]/10">
+        <div className="flex items-center gap-6">
+          <div className="flex flex-col">
+            <span className="text-[10px] text-[#a3aac4] font-bold uppercase tracking-widest">
+              Nodes
+            </span>
+            <span className="text-xl font-headline font-bold">
+              {data.nodes.length.toLocaleString()}
+            </span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-[10px] text-[#a3aac4] font-bold uppercase tracking-widest">
+              Edges
+            </span>
+            <span className="text-xl font-headline font-bold">
+              {data.links.length.toLocaleString()}
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* Graph */}
       {isLoading ? (
-        <div className="flex h-full items-center justify-center text-muted-foreground">
+        <div className="flex h-full items-center justify-center text-[#a3aac4]">
+          <span className="material-symbols-outlined text-3xl mr-3 animate-spin">
+            progress_activity
+          </span>
           Loading knowledge graph...
         </div>
       ) : data.nodes.length === 0 ? (
-        <div className="flex h-full items-center justify-center text-muted-foreground">
-          No knowledge yet. Run some research first!
+        <div className="flex h-full flex-col items-center justify-center text-[#a3aac4]">
+          <span className="material-symbols-outlined text-5xl mb-4 opacity-30">hub</span>
+          <p>No knowledge yet. Run some research first!</p>
         </div>
       ) : (
         <ForceGraph2D
           ref={fgRef}
           graphData={data}
           nodeCanvasObject={nodeCanvasObject}
-          linkColor={() => "rgba(99, 102, 241, 0.2)"}
+          linkColor={() => "rgba(186, 158, 255, 0.15)"}
           linkWidth={1}
           linkDirectionalArrowLength={4}
           linkDirectionalArrowRelPos={1}
-          linkDirectionalArrowColor={() => "rgba(99, 102, 241, 0.4)"}
+          linkDirectionalArrowColor={() => "rgba(186, 158, 255, 0.3)"}
           linkCanvasObjectMode={() => "after"}
+          // biome-ignore lint/suspicious/noExplicitAny: react-force-graph-2d has no exported link types
           linkCanvasObject={(link: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
+            // biome-ignore lint/suspicious/noExplicitAny: force-graph resolves node refs at runtime
             const source = link.source as any;
+            // biome-ignore lint/suspicious/noExplicitAny: force-graph resolves node refs at runtime
             const target = link.target as any;
             if (!source?.x || !target?.x) return;
             const label = link.type || "";
@@ -155,7 +179,7 @@ export function KnowledgeGraph() {
             ctx.font = `${fontSize}px sans-serif`;
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
-            ctx.fillStyle = "rgba(180, 180, 200, 0.6)";
+            ctx.fillStyle = "rgba(163, 170, 196, 0.5)";
             ctx.fillText(label, midX, midY);
           }}
           backgroundColor="transparent"
@@ -175,6 +199,20 @@ export function KnowledgeGraph() {
         onZoomOut={() => fgRef.current?.zoom(0.5, 400)}
         onReset={() => fgRef.current?.zoomToFit(400)}
       />
+
+      {/* Legend */}
+      <div className="absolute bottom-6 right-6 z-10 p-4 bg-[#050a18]/60 backdrop-blur-md rounded-xl border border-[#40485d]/10">
+        <div className="flex gap-4">
+          {Object.entries(NODE_COLORS)
+            .slice(0, 4)
+            .map(([type, color]) => (
+              <div key={type} className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
+                <span className="text-[10px] font-bold text-[#a3aac4] uppercase">{type}</span>
+              </div>
+            ))}
+        </div>
+      </div>
     </div>
   );
 }

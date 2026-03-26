@@ -1,6 +1,5 @@
 "use client";
 
-import { IconPlayerStop, IconSend } from "@tabler/icons-react";
 import { useRef, useState } from "react";
 
 interface ChatInputProps {
@@ -16,7 +15,7 @@ export function ChatInput({
   onStop,
   isStreaming,
   disabled,
-  placeholder = "Send a message...",
+  placeholder = "Message Zoro...",
 }: ChatInputProps) {
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -47,36 +46,44 @@ export function ChatInput({
   }
 
   return (
-    <div className="flex items-end gap-2 border border-border rounded-2xl bg-background/80 backdrop-blur-sm px-4 py-3">
-      <textarea
-        ref={textareaRef}
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onKeyDown={handleKeyDown}
-        onInput={handleInput}
-        placeholder={placeholder}
-        disabled={disabled}
-        rows={1}
-        className="flex-1 resize-none bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground text-sm max-h-[200px]"
-      />
-      {isStreaming ? (
-        <button
-          type="button"
-          onClick={onStop}
-          className="shrink-0 rounded-full bg-destructive p-2 text-destructive-foreground transition-opacity hover:opacity-80"
-        >
-          <IconPlayerStop className="h-4 w-4" />
-        </button>
-      ) : (
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={!value.trim() || disabled}
-          className="shrink-0 rounded-full bg-indigo-600 p-2 text-white transition-opacity disabled:opacity-30 hover:opacity-80"
-        >
-          <IconSend className="h-4 w-4" />
-        </button>
-      )}
+    <div className="relative group">
+      <div className="absolute -inset-1 bg-gradient-to-r from-[#ba9eff]/8 via-[#699cff]/8 to-[#ba9eff]/8 rounded-[2rem] blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-500" />
+      <div className="relative bg-black border border-[#40485d]/12 rounded-[2rem] p-4 flex flex-col gap-3 shadow-2xl">
+        <div className="flex items-end gap-3 px-2">
+          <textarea
+            ref={textareaRef}
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onInput={handleInput}
+            placeholder={placeholder}
+            disabled={disabled}
+            rows={1}
+            className="flex-1 bg-transparent border-none focus:ring-0 text-[#dee5ff] placeholder-[#a3aac4]/40 resize-none max-h-[200px] min-h-[48px] py-2 no-scrollbar"
+          />
+          <div className="flex items-center gap-2 mb-1">
+            {isStreaming && (
+              <button
+                type="button"
+                onClick={onStop}
+                aria-label="Stop generating"
+                className="w-10 h-10 rounded-full flex items-center justify-center text-[#ff6e84] border border-[#ff6e84]/20 hover:bg-[#ff6e84]/10 transition-colors"
+              >
+                <span className="material-symbols-outlined">stop_circle</span>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={!value.trim() || disabled || isStreaming}
+              aria-label="Send message"
+              className="w-10 h-10 rounded-full zoro-gradient-bg flex items-center justify-center text-black shadow-lg shadow-[#ba9eff]/20 hover:scale-105 active:scale-95 transition-all disabled:opacity-30"
+            >
+              <span className="material-symbols-outlined">arrow_upward</span>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

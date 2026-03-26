@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"path/filepath"
 
@@ -69,8 +68,8 @@ func Wire(ctx context.Context, cfg *config.AppConfig) (*echo.Echo, func(), error
 		URL:       surrealURL,
 		Namespace: "zoro",
 		Database:  "zoro",
-		Username:  "root",
-		Password:  "root",
+		Username:  cfg.SurrealDBUser,
+		Password:  cfg.SurrealDBPass,
 	})
 	if err != nil {
 		runCleanups(cleanups)
@@ -88,26 +87,21 @@ func Wire(ctx context.Context, cfg *config.AppConfig) (*echo.Echo, func(), error
 		return nil, nil, err
 	}
 
-	es := events.New(ctx, store.DB())
-	if err := es.EnsureSchema(); err != nil {
+	es := events.New(store.DB())
+	if err := es.EnsureSchema(ctx); err != nil {
 		log.Printf("event schema warning: %v", err)
 	}
 
 	s := searcher.New(searxngURL)
 
-	webSearch := tools.NewWebSearchTool(s)
+	webSearch := tools.NewWebSearchTool(s, graph)
 	searchKG := tools.NewSearchKnowledgeTool(graph)
 	storeKG := tools.NewStoreKnowledgeTool(graph)
 
 	ag := agent.New(adapter, webSearch, searchKG, storeKG, cfg.OllamaFastModel, es)
 	orch := orchestrator.New(graph, adapter, s)
 
-	srv := server.New(ag, orch, graph, adapter)
-	srv.SetServiceStatus(server.ServiceStatus{
-		SurrealDB: true, // we got here, so SurrealDB is connected
-		SearXNG:   searxngURL != "",
-		Ollama:    checkOllama(cfg.OllamaHost),
-	})
+	srv := server.New(ag, orch, graph, adapter, cfg.OllamaHost, searxngURL)
 	e := srv.Setup()
 
 	cleanup := func() {
@@ -127,15 +121,6 @@ func writeSearXNGSettings(dataDir string) (string, error) {
 		return "", err
 	}
 	return p, nil
-}
-
-func checkOllama(host string) bool {
-	resp, err := http.Get(host + "/api/tags")
-	if err != nil {
-		return false
-	}
-	resp.Body.Close()
-	return resp.StatusCode == http.StatusOK
 }
 
 func runCleanups(fns []func()) {

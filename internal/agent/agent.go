@@ -3,6 +3,7 @@ package agent
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"strings"
 	"sync"
 	"time"
@@ -23,7 +24,8 @@ When answering:
 - Use store_knowledge to persist important findings for future reference
 - Synthesize information from multiple sources
 - Be concise and well-structured in your responses
-- Use markdown formatting`
+- Use markdown formatting
+- IMPORTANT: When citing information from web_search results, always include inline citations using the result index numbers like [1], [2], [3]. For example: "React 19 introduced server components [1] and improved hydration [3]." Every factual claim from search results must have a citation.`
 
 type Agent struct {
 	sdkAgent    *adk.Agent
@@ -59,8 +61,8 @@ func New(adapter *ollama.Adapter, webSearch *tools.WebSearchTool, searchKG *tool
 	}
 }
 
-func (a *Agent) CreateSession() (*models.ChatSession, error) {
-	id, err := a.events.CreateSession()
+func (a *Agent) CreateSession(ctx context.Context) (*models.ChatSession, error) {
+	id, err := a.events.CreateSession(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -71,12 +73,12 @@ func (a *Agent) CreateSession() (*models.ChatSession, error) {
 	}, nil
 }
 
-func (a *Agent) GetSession(id string) (*models.ChatSession, error) {
-	return a.events.GetSession(id)
+func (a *Agent) GetSession(ctx context.Context, id string) (*models.ChatSession, error) {
+	return a.events.GetSession(ctx, id)
 }
 
-func (a *Agent) ListSessions() ([]models.ChatSessionSummary, error) {
-	return a.events.ListSessions()
+func (a *Agent) ListSessions(ctx context.Context) ([]models.ChatSessionSummary, error) {
+	return a.events.ListSessions(ctx)
 }
 
 func (a *Agent) Subscribe(id string) <-chan models.SSEEvent {
@@ -95,6 +97,7 @@ func (a *Agent) emit(sessionID string, evt models.SSEEvent) {
 		select {
 		case ch <- evt:
 		default:
+			log.Printf("[agent] warning: dropped event %s for session %s (slow subscriber)", evt.Type, sessionID)
 		}
 	}
 }
@@ -117,7 +120,7 @@ func (a *Agent) SendMessage(ctx context.Context, sessionID, content string) {
 		Content:   content,
 		CreatedAt: time.Now(),
 	}
-	if err := a.events.AppendEvent(sessionID, userEvent); err != nil {
+	if err := a.events.AppendEvent(ctx, sessionID, userEvent); err != nil {
 		a.emit(sessionID, models.SSEEvent{
 			Type: models.EventError,
 			Data: map[string]string{"message": err.Error()},
@@ -127,7 +130,7 @@ func (a *Agent) SendMessage(ctx context.Context, sessionID, content string) {
 	}
 
 	// Build SDK messages from session history
-	session, err := a.events.GetSession(sessionID)
+	session, err := a.events.GetSession(ctx, sessionID)
 	if err != nil {
 		a.emit(sessionID, models.SSEEvent{
 			Type: models.EventError,
@@ -140,9 +143,10 @@ func (a *Agent) SendMessage(ctx context.Context, sessionID, content string) {
 	sdkMessages := buildSDKMessages(session.Messages)
 
 	// Create per-session tools with group ID
+	webSearchScoped := a.webSearch.WithGroupID(sessionID)
 	searchKGScoped := a.searchKG.WithGroupID(sessionID)
 	storeKGScoped := a.storeKG.WithGroupID(sessionID)
-	toolReg := core.NewToolRegistry(a.webSearch, searchKGScoped, storeKGScoped)
+	toolReg := core.NewToolRegistry(webSearchScoped, searchKGScoped, storeKGScoped)
 
 	sessionAgent := adk.NewAgent(adk.AgentConfig{
 		Name:         "zoro",
@@ -158,13 +162,16 @@ func (a *Agent) SendMessage(ctx context.Context, sessionID, content string) {
 	var contentBuilder strings.Builder
 	var eventToolCalls []models.ToolCall
 
-	// Track active tool calls by ID for correlating start/end deltas
+	// Track active tool calls by ID for correlating start/end deltas.
+	// lastStartedID tracks sequential ordering: the SDK emits
+	// ToolCallStartDelta then ToolCallEndDelta for each call in order.
 	type activeCall struct {
 		ID   string
 		Name string
 		Args map[string]any
 	}
 	activeCalls := make(map[string]*activeCall)
+	var lastStartedID string
 
 	for delta := range stream.Deltas() {
 		switch v := delta.(type) {
@@ -176,18 +183,19 @@ func (a *Agent) SendMessage(ctx context.Context, sessionID, content string) {
 			})
 		case core.ToolCallStartDelta:
 			activeCalls[v.ID] = &activeCall{ID: v.ID, Name: v.Name}
+			lastStartedID = v.ID
 			a.emit(sessionID, models.SSEEvent{
 				Type: models.EventToolCallStart,
 				Data: map[string]string{"id": v.ID, "name": v.Name},
 			})
 		case core.ToolCallEndDelta:
-			// ToolCallEndDelta carries the LLM's parsed arguments.
-			// Find the active call and attach arguments for persistence.
-			for _, ac := range activeCalls {
-				if ac.Args == nil {
+			// ToolCallEndDelta carries the LLM's parsed arguments but has no ID.
+			// Match by sequential ordering (same as SDK's DefaultAggregator).
+			if lastStartedID != "" {
+				if ac, ok := activeCalls[lastStartedID]; ok {
 					ac.Args = v.Arguments
-					break
 				}
+				lastStartedID = ""
 			}
 		case core.ToolExecEndDelta:
 			// ToolExecEndDelta carries the actual tool result.
@@ -236,7 +244,9 @@ func (a *Agent) SendMessage(ctx context.Context, sessionID, content string) {
 			ToolCalls: eventToolCalls,
 			CreatedAt: time.Now(),
 		}
-		a.events.AppendEvent(sessionID, assistantEvent)
+		if err := a.events.AppendEvent(ctx, sessionID, assistantEvent); err != nil {
+			log.Printf("[agent] warning: failed to persist assistant message for session %s: %v", sessionID, err)
+		}
 	}
 
 	a.closeSubscribers(sessionID)
@@ -301,7 +311,9 @@ func buildSDKMessages(msgs []models.ChatMessage) []core.Message {
 			}
 			for _, tc := range m.ToolCalls {
 				var args map[string]any
-				json.Unmarshal([]byte(tc.Arguments), &args)
+				if err := json.Unmarshal([]byte(tc.Arguments), &args); err != nil {
+					log.Printf("[agent] warning: failed to parse tool call arguments for %s: %v", tc.Name, err)
+				}
 				content = append(content, core.ToolUseContent{
 					ID:        tc.ID,
 					Name:      tc.Name,
@@ -326,6 +338,9 @@ func parseJSONArray(raw string) []string {
 		return nil
 	}
 	var result []string
-	json.Unmarshal([]byte(raw[start:end+1]), &result)
+	if err := json.Unmarshal([]byte(raw[start:end+1]), &result); err != nil {
+		log.Printf("[agent] warning: failed to parse autocomplete JSON: %v", err)
+		return nil
+	}
 	return result
 }

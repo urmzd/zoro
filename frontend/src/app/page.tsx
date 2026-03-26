@@ -1,6 +1,5 @@
 "use client";
 
-import { IconLoader2, IconSearch } from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -9,8 +8,9 @@ import {
   getAutocompleteSuggestions,
   searchKnowledge,
 } from "@/app/lib/api";
+import type { Fact } from "@/app/lib/types";
 import { KnowledgeResults } from "@/components/chat/knowledge-results";
-import { BackgroundBeams } from "@/components/ui/background-beams";
+import { GraphErrorBoundary } from "@/components/graph/graph-error-boundary";
 import { useChatStore } from "@/lib/stores/chat-store";
 
 type Status =
@@ -33,7 +33,7 @@ export default function Home() {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [ghostText, setGhostText] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [knowledgeResults, setKnowledgeResults] = useState<any[]>([]);
+  const [knowledgeResults, setKnowledgeResults] = useState<Fact[]>([]);
   const [knowledgeSearched, setKnowledgeSearched] = useState(false);
 
   const router = useRouter();
@@ -42,7 +42,6 @@ export default function Home() {
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
 
-  // Close suggestions when clicking outside
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (
@@ -56,6 +55,13 @@ export default function Home() {
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (abortRef.current) abortRef.current.abort();
+    };
   }, []);
 
   const fetchSuggestions = useCallback((value: string) => {
@@ -77,13 +83,12 @@ export default function Home() {
         if (!controller.signal.aborted) {
           setSuggestions(results);
           setShowSuggestions(results.length > 0);
-          // Pick the best ghost text: first suggestion that extends the current input
           const currentQuery = inputRef.current?.value ?? "";
           const match = results.find((s) => s.toLowerCase().startsWith(currentQuery.toLowerCase()));
           setGhostText(match ?? "");
         }
       } catch {
-        // aborted or network error — ignore
+        // aborted or network error
       }
     }, 300);
   }, []);
@@ -121,7 +126,6 @@ export default function Home() {
     setShowSuggestions(false);
     setSuggestions([]);
 
-    // Step 1: Classify intent
     setStatus("classifying");
     let action: "chat" | "knowledge_search";
     try {
@@ -131,7 +135,6 @@ export default function Home() {
       action = "chat";
     }
 
-    // Step 2: Route based on intent
     if (action === "chat") {
       setStatus("starting_chat");
       try {
@@ -160,34 +163,35 @@ export default function Home() {
   const statusLabel = STATUS_LABELS[status];
 
   return (
-    <main className="relative flex min-h-screen flex-col items-center justify-center px-4">
-      <BackgroundBeams />
-      <div className="relative z-10 flex flex-col items-center gap-8 w-full max-w-3xl">
-        <div className="text-center space-y-3">
-          <h1 className="text-6xl font-bold tracking-tight bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-            Zoro
-          </h1>
-          <p className="text-muted-foreground text-lg">Find The Truth.</p>
-        </div>
+    <section className="flex-1 flex flex-col items-center justify-center px-6 py-24 relative z-10">
+      {/* Background Luminous Core */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#ba9eff]/5 rounded-full blur-[150px] pointer-events-none" />
 
-        {/* Unified input */}
-        <div className="w-full max-w-2xl mx-auto relative">
-          <form onSubmit={handleSubmit}>
-            <div className="flex items-center gap-3 rounded-2xl border border-border bg-background/80 backdrop-blur-sm px-4 py-3">
-              {isLoading ? (
-                <IconLoader2 className="h-5 w-5 text-muted-foreground shrink-0 animate-spin" />
-              ) : (
-                <IconSearch className="h-5 w-5 text-muted-foreground shrink-0" />
-              )}
+      <div className="w-full max-w-4xl text-center mb-16">
+        <h2 className="font-headline text-5xl md:text-7xl font-bold tracking-tight mb-6">
+          What should we <span className="zoro-gradient-text">uncover</span> today?
+        </h2>
+        <p className="text-[#a3aac4] text-lg max-w-2xl mx-auto font-light">
+          Query the Luminous Intelligence core for structured facts or creative dialogue.
+        </p>
+      </div>
+
+      {/* Search Bar */}
+      <div className="w-full max-w-3xl relative">
+        <form onSubmit={handleSubmit}>
+          <div className="glass-panel p-1.5 rounded-2xl luminous-glow">
+            <div className="flex items-center bg-black rounded-[14px] px-6 py-4">
+              <span className="material-symbols-outlined text-[#ba9eff] text-2xl mr-4">
+                {isLoading ? "progress_activity" : "search"}
+              </span>
               <div className="relative flex-1">
-                {/* Ghost text overlay */}
                 {ghostText &&
                   query &&
                   ghostText.toLowerCase().startsWith(query.toLowerCase()) &&
                   ghostText !== query && (
                     <span
                       aria-hidden
-                      className="pointer-events-none absolute inset-0 flex items-center text-base text-muted-foreground/25 select-none whitespace-nowrap overflow-hidden"
+                      className="pointer-events-none absolute inset-0 flex items-center text-xl text-[#a3aac4]/20 select-none whitespace-nowrap overflow-hidden font-light"
                     >
                       <span className="invisible">{query}</span>
                       <span>{ghostText.slice(query.length)}</span>
@@ -202,58 +206,66 @@ export default function Home() {
                   onFocus={() => {
                     if (suggestions.length > 0) setShowSuggestions(true);
                   }}
-                  placeholder="Ask anything — Zoro will figure out the rest"
+                  placeholder="Search the knowledge graph..."
                   disabled={isLoading}
                   autoComplete="off"
-                  className="relative w-full bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground text-base"
+                  className="relative w-full bg-transparent border-none outline-none text-xl text-[#dee5ff] placeholder:text-[#a3aac4]/30 font-light focus:ring-0"
                 />
               </div>
-              <button
-                type="submit"
-                disabled={isLoading || !query.trim()}
-                className="shrink-0 rounded-full bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white transition-opacity disabled:opacity-50 hover:opacity-90"
-              >
-                Go
-              </button>
+              <div className="flex items-center gap-2">
+                <span className="bg-[#141f38] text-[10px] text-[#a3aac4] px-2 py-1 rounded font-mono border border-[#40485d]/20">
+                  ⌘ K
+                </span>
+              </div>
             </div>
-          </form>
+          </div>
+        </form>
 
-          {/* Autocomplete dropdown */}
-          {showSuggestions && suggestions.length > 0 && (
-            <div
-              ref={suggestionsRef}
-              className="absolute top-full left-0 right-0 mt-1 rounded-xl border border-border bg-background/95 backdrop-blur-sm shadow-lg overflow-hidden z-20"
-            >
-              {suggestions.map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => selectSuggestion(s)}
-                  className="w-full text-left px-4 py-2.5 text-sm text-foreground/80 hover:bg-muted/50 transition-colors"
-                >
-                  {s}
-                </button>
-              ))}
+        {/* Intent indicator */}
+        {status === "classifying" && (
+          <div className="absolute -bottom-10 left-6 flex items-center gap-3">
+            <div className="flex items-center gap-2 px-3 py-1 bg-[#0f1930] rounded-full text-[10px] font-bold uppercase tracking-wider text-[#ba9eff] border border-[#ba9eff]/20">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#ba9eff] animate-pulse" />
+              Classifying intent...
             </div>
-          )}
-        </div>
-
-        {/* Loading status */}
-        {statusLabel && (
-          <p className="text-sm text-muted-foreground animate-pulse">{statusLabel}</p>
+          </div>
         )}
 
-        {/* Inline knowledge results */}
-        {knowledgeSearched && (
-          <div className="w-full max-w-2xl mx-auto">
+        {/* Autocomplete dropdown */}
+        {showSuggestions && suggestions.length > 0 && (
+          <div
+            ref={suggestionsRef}
+            className="absolute top-full left-0 right-0 mt-2 rounded-xl glass-card shadow-lg overflow-hidden z-20"
+          >
+            {suggestions.map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => selectSuggestion(s)}
+                className="w-full text-left px-6 py-3 text-sm text-[#dee5ff]/80 hover:bg-[#1f2b49] transition-colors"
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Loading status */}
+      {statusLabel && <p className="text-sm text-[#a3aac4] animate-pulse mt-8">{statusLabel}</p>}
+
+      {/* Knowledge results */}
+      {knowledgeSearched && (
+        <div className="w-full max-w-4xl mt-16">
+          <GraphErrorBoundary>
             <KnowledgeResults
               results={knowledgeResults}
               searched={knowledgeSearched}
               loading={status === "searching_knowledge"}
             />
-          </div>
-        )}
-      </div>
-    </main>
+          </GraphErrorBoundary>
+        </div>
+      )}
+    </section>
   );
 }

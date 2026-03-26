@@ -3,6 +3,10 @@
 import { create } from "zustand";
 import type { ChatMessage, ChatState, ToolCall } from "@/app/lib/types";
 
+function msgId(): string {
+  return crypto.randomUUID();
+}
+
 interface KnowledgeChatStore extends ChatState {
   sessionId: string | null;
   setSessionId: (id: string) => void;
@@ -32,7 +36,7 @@ export const useKnowledgeChatStore = create<KnowledgeChatStore>((set) => ({
 
   addUserMessage: (content) =>
     set((s) => ({
-      messages: [...s.messages, { role: "user", content }],
+      messages: [...s.messages, { id: msgId(), role: "user", content }],
       currentAssistantContent: "",
       currentToolCalls: [],
       status: "streaming",
@@ -57,6 +61,7 @@ export const useKnowledgeChatStore = create<KnowledgeChatStore>((set) => ({
   finalizeTurn: () =>
     set((s) => {
       const assistantMsg: ChatMessage = {
+        id: msgId(),
         role: "assistant",
         content: s.currentAssistantContent,
         toolCalls: s.currentToolCalls.length > 0 ? s.currentToolCalls : undefined,

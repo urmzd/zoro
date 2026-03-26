@@ -1,7 +1,5 @@
 "use client";
 
-import { IconFocusCentered, IconZoomIn, IconZoomOut } from "@tabler/icons-react";
-
 interface GraphControlsProps {
   onZoomIn: () => void;
   onZoomOut: () => void;
@@ -10,31 +8,30 @@ interface GraphControlsProps {
 
 export function GraphControls({ onZoomIn, onZoomOut, onReset }: GraphControlsProps) {
   return (
-    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1 rounded-lg border border-border/50 bg-background/80 backdrop-blur-md p-1">
+    <div className="absolute bottom-6 left-6 flex flex-col gap-2 z-10">
       <button
         type="button"
         onClick={onZoomIn}
-        className="rounded-md p-2 hover:bg-muted transition-colors"
+        className="w-10 h-10 flex items-center justify-center bg-[#050a18] border border-[#40485d]/20 rounded-lg hover:bg-[#1f2b49] transition-colors"
         title="Zoom in"
       >
-        <IconZoomIn className="h-4 w-4" />
+        <span className="material-symbols-outlined">add</span>
       </button>
       <button
         type="button"
         onClick={onZoomOut}
-        className="rounded-md p-2 hover:bg-muted transition-colors"
+        className="w-10 h-10 flex items-center justify-center bg-[#050a18] border border-[#40485d]/20 rounded-lg hover:bg-[#1f2b49] transition-colors"
         title="Zoom out"
       >
-        <IconZoomOut className="h-4 w-4" />
+        <span className="material-symbols-outlined">remove</span>
       </button>
-      <div className="w-px h-4 bg-border" />
       <button
         type="button"
         onClick={onReset}
-        className="rounded-md p-2 hover:bg-muted transition-colors"
+        className="w-10 h-10 flex items-center justify-center bg-[#050a18] border border-[#40485d]/20 rounded-lg hover:bg-[#1f2b49] transition-colors"
         title="Fit to view"
       >
-        <IconFocusCentered className="h-4 w-4" />
+        <span className="material-symbols-outlined">recenter</span>
       </button>
     </div>
   );

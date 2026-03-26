@@ -1,21 +1,24 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Manrope, Space_Grotesk } from "next/font/google";
+import { GlobalShortcuts } from "@/components/nav/global-shortcuts";
 import { Sidebar } from "@/components/nav/sidebar";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-headline",
   subsets: ["latin"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const manrope = Manrope({
+  variable: "--font-body",
   subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Zoro — Research Agent",
-  description: "AI-powered research agent with persistent knowledge graph",
+  title: "Zoro — Luminous Intelligence",
+  description: "Local-first AI research agent with persistent knowledge graph",
 };
 
 export default function RootLayout({
@@ -25,13 +28,18 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <div className="flex flex-col h-screen">
-          <div className="h-8 shrink-0 bg-background/50 backdrop-blur-sm" style={{ WebkitAppRegion: "drag" } as React.CSSProperties} />
-          <div className="flex flex-1 min-h-0">
-            <Sidebar />
-            <main className="flex-1 overflow-auto">{children}</main>
-          </div>
+      <body
+        className={`${spaceGrotesk.variable} ${manrope.variable} font-body antialiased selection:bg-primary/30`}
+      >
+        <div className="flex h-screen overflow-hidden">
+          <Sidebar />
+          <main className="flex-1 flex flex-col min-w-0 relative overflow-hidden">
+            {/* Ambient background glows */}
+            <div className="absolute -top-40 -right-40 w-[600px] h-[600px] bg-[#ba9eff]/3 rounded-full blur-[150px] pointer-events-none" />
+            <div className="absolute -bottom-40 -left-40 w-[600px] h-[600px] bg-[#699cff]/3 rounded-full blur-[150px] pointer-events-none" />
+            <GlobalShortcuts />
+            <div className="flex-1 overflow-auto relative z-10">{children}</div>
+          </main>
         </div>
       </body>
     </html>

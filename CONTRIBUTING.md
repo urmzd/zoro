@@ -7,12 +7,10 @@ Thanks for your interest in contributing to Zoro. This guide covers how to set u
 ### Prerequisites
 
 - [Go 1.25+](https://go.dev/dl/)
-- [Node.js 18+](https://nodejs.org/)
+- [Node.js 22+](https://nodejs.org/)
 - [Docker & Docker Compose](https://docs.docker.com/get-docker/)
 - [Ollama](https://ollama.ai)
 - [Just](https://github.com/casey/just)
-- [oag](https://github.com/urmzd/openapi-generator) (for API client generation)
-- Python 3 (for test scripts)
 
 ### Development Setup
 
@@ -21,51 +19,52 @@ Thanks for your interest in contributing to Zoro. This guide covers how to set u
 git clone https://github.com/urmzd/zoro.git
 cd zoro
 
-# Start all services with hot reload
+# First-time setup: installs deps, starts Docker (SurrealDB + SearXNG), pulls LLM models
+just setup
+
+# Start Go backend + Next.js frontend with hot reload
 just dev
 ```
 
-This starts Neo4j + SearXNG, pulls the default LLM model, starts Ollama, and runs both the API and frontend with hot reload.
-
-If you prefer to run services individually:
-
-```bash
-just infra      # Neo4j + SearXNG
-just serve      # Ollama
-just api        # Go API (hot reload via air)
-just web        # Next.js frontend (fast refresh)
-```
+`just dev` starts Docker services, Ollama, the Go backend on `:8080`, and the Next.js frontend on `:3000`.
 
 ### Verifying Your Setup
 
 ```bash
-# Lint and typecheck
-just check
-
-# Run end-to-end tests
-just test-e2e
+just check    # Lint + typecheck (Go vet + Biome + tsc)
 ```
 
 ## Project Layout
 
 ```
-api/internal/
-├── config/      # Environment configuration
-├── handler/     # HTTP request handlers
-├── model/       # Shared data structures
-├── router/      # Route definitions and middleware
-└── service/     # Core business logic
-    ├── orchestrator.go  # Research pipeline coordination
-    ├── knowledge.go     # Neo4j knowledge store operations
-    ├── searcher.go      # Web search (SearXNG / ChromeDP)
-    └── ollama.go        # LLM integration
+internal/
+├── agent/         # Chat agent: SDK wiring, session management, SSE streaming
+├── app/           # Dependency wiring (wire.go)
+├── config/        # Environment configuration, embedded SearXNG settings
+├── events/        # SurrealDB event store for chat sessions
+├── models/        # Shared data structures
+├── orchestrator/  # Research pipeline: search → ingest → summarize
+├── searcher/      # SearXNG HTTP client
+├── server/        # Echo HTTP handlers, SSE writer, middleware
+├── subprocess/    # Managed SurrealDB and SearXNG subprocesses (desktop mode)
+└── tools/         # Agent tools: web_search, search_knowledge, store_knowledge
 
 frontend/src/
-├── app/         # Next.js pages, API client, types
-├── components/  # React components
-├── generated/   # Auto-generated API client (do not edit)
-└── lib/         # State stores and utilities
+├── app/           # Next.js pages, API client, hooks, types
+├── components/    # React components (chat, research, graph, nav)
+└── lib/           # Zustand stores and utilities
+
+api/openapi.yaml   # OpenAPI 3.1 spec (source of truth for API types)
+cmd/desktop/       # Wails desktop app entry point
 ```
+
+### Key Dependencies
+
+- **adk** (`github.com/urmzd/adk`): Agent SDK — typed deltas, provider interface, tool registry
+- **kgdk** (`github.com/urmzd/kgdk`): Knowledge graph SDK — SurrealDB store, extraction, embeddings
+- **SurrealDB**: Graph + document database (Docker in web mode, managed subprocess in desktop mode)
+- **SearXNG**: Metasearch engine (Docker in web mode, managed subprocess in desktop mode)
+- **Ollama**: Local LLM provider
 
 ## Making Changes
 
@@ -75,62 +74,53 @@ frontend/src/
 2. Create a feature branch from `main`
 3. Make your changes
 4. Run checks: `just check`
-5. Run the end-to-end tests: `just test-e2e`
-6. Submit a pull request
+5. Submit a pull request
 
-### API Client Generation
+### API Changes
 
-The frontend API client is auto-generated from `openapi.yaml` using [oag](https://github.com/urmzd/openapi-generator). Do not edit files in `frontend/src/generated/` — they will be overwritten.
+The API spec lives in `api/openapi.yaml`. When changing endpoints:
 
-When you change API endpoints:
+1. Update `api/openapi.yaml`
+2. Update Go handlers in `internal/server/`
+3. Regenerate frontend types: `just generate`
 
-1. Update the Swagger annotations in the Go handlers
-2. Regenerate Swagger docs: `just swagger`
-3. Update `openapi.yaml` to match
-4. Regenerate the client: `just generate`
+Do not edit files in `frontend/src/generated/` — they are auto-generated.
 
 ### Code Conventions
 
-**Go (API):**
+**Go:**
 
 - Follow standard Go conventions (`gofmt`, `go vet`)
-- Keep handlers thin — business logic belongs in `service/`
-- Use the existing config pattern for new environment variables
-- Update Swagger annotations when changing API endpoints: `just swagger`
+- Keep handlers thin — business logic belongs in `internal/agent/` or `internal/orchestrator/`
+- Use the existing config pattern (`internal/config/`) for new environment variables
+- Tools implement `core.Tool` from the adk SDK
 
-**TypeScript (Frontend):**
+**TypeScript:**
 
 - Lint and format with [Biome](https://biomejs.dev): `npx biome check .`
 - Follow the existing Next.js App Router patterns
 - Use Zustand for client-side state
-- Place reusable components under `src/components/`
-- Use the shadcn/ui component library for UI primitives
+- Use shadcn/ui for UI primitives
+- Use Streamdown for streaming markdown rendering
 
 ### Commit Messages
 
-Write clear, concise commit messages. Use conventional commit prefixes:
+Use conventional commit prefixes:
 
 - `feat:` — new feature
 - `fix:` — bug fix
 - `docs:` — documentation changes
 - `refactor:` — code restructuring without behavior change
 - `build:` — build system or dependency changes
-- `chore:` — maintenance tasks
-- `test:` — test additions or changes
 
-### Architecture Decisions
+## Desktop Mode
 
-Significant changes should be proposed as an RFC in `docs/`. See `docs/rfc001-knowledge-graph.md` for an example. This helps maintain a record of design decisions and their rationale.
-
-## Testing
+Zoro can run as a standalone desktop app via [Wails](https://wails.io/). In desktop mode, SurrealDB and SearXNG are managed as subprocesses (no Docker required).
 
 ```bash
-just check              # Lint + typecheck
-just test-e2e           # Full pipeline test
-just bench [model]      # LLM performance benchmarking
+just build-desktop    # Build the desktop binary
+just dev-desktop      # Run in dev mode
 ```
-
-End-to-end tests validate the full pipeline: API health, research sessions, SSE streaming, and knowledge graph queries. Make sure Neo4j, SearXNG, Ollama, and the API are running before executing tests.
 
 ## Reporting Issues
 
