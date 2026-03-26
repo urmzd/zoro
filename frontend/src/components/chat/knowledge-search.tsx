@@ -1,6 +1,5 @@
 "use client";
 
-import { IconSearch } from "@tabler/icons-react";
 import { useState } from "react";
 import { searchKnowledge } from "@/app/lib/api";
 
@@ -37,20 +36,20 @@ export function KnowledgeSearch() {
   return (
     <div className="w-full max-w-2xl mx-auto space-y-4">
       <form onSubmit={handleSubmit}>
-        <div className="flex items-center gap-3 rounded-2xl border border-border bg-background/80 backdrop-blur-sm px-4 py-3">
-          <IconSearch className="h-5 w-5 text-muted-foreground shrink-0" />
+        <div className="flex items-center gap-3 rounded-2xl bg-black border border-[#40485d]/20 px-4 py-3">
+          <span className="material-symbols-outlined text-[#ba9eff] shrink-0">search</span>
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search your knowledge graph..."
             disabled={loading}
-            className="flex-1 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground text-base"
+            className="flex-1 bg-transparent border-none outline-none text-[#dee5ff] placeholder:text-[#a3aac4]/40 text-base focus:ring-0"
           />
           <button
             type="submit"
             disabled={loading || !query.trim()}
-            className="shrink-0 rounded-full bg-purple-600 px-4 py-1.5 text-sm font-medium text-white transition-opacity disabled:opacity-50 hover:opacity-90"
+            className="shrink-0 rounded-full zoro-gradient-bg px-4 py-1.5 text-sm font-medium text-black transition-opacity disabled:opacity-50"
           >
             {loading ? "Searching..." : "Search"}
           </button>
@@ -60,7 +59,7 @@ export function KnowledgeSearch() {
       {searched && !loading && (
         <div className="space-y-2">
           {results.length === 0 ? (
-            <p className="text-center text-sm text-muted-foreground py-4">
+            <p className="text-center text-sm text-[#a3aac4] py-4">
               No results found. Try a different query or build knowledge through chat first.
             </p>
           ) : (
@@ -68,26 +67,26 @@ export function KnowledgeSearch() {
               {results.map((fact, i) => (
                 <div
                   key={fact.uuid ?? i}
-                  className="rounded-lg border border-border/50 bg-card/50 px-4 py-3 text-sm"
+                  className="rounded-xl glass-card px-4 py-3 text-sm"
                 >
                   {(fact.source_node?.name || fact.target_node?.name) && (
                     <div className="flex items-center gap-2 mb-1">
                       {fact.source_node?.name && (
-                        <span className="rounded-full bg-indigo-600/20 px-2 py-0.5 text-xs font-medium text-indigo-400">
+                        <span className="rounded-full bg-[#ba9eff]/20 px-2 py-0.5 text-xs font-medium text-[#ba9eff]">
                           {fact.source_node.name}
                         </span>
                       )}
                       {fact.source_node?.name && fact.target_node?.name && (
-                        <span className="text-muted-foreground text-xs">&rarr;</span>
+                        <span className="text-[#a3aac4] text-xs">&rarr;</span>
                       )}
                       {fact.target_node?.name && (
-                        <span className="rounded-full bg-purple-600/20 px-2 py-0.5 text-xs font-medium text-purple-400">
+                        <span className="rounded-full bg-[#699cff]/20 px-2 py-0.5 text-xs font-medium text-[#699cff]">
                           {fact.target_node.name}
                         </span>
                       )}
                     </div>
                   )}
-                  <p className="text-foreground/80">{fact.fact}</p>
+                  <p className="text-[#dee5ff]/80">{fact.fact}</p>
                 </div>
               ))}
             </div>

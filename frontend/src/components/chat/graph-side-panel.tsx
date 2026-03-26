@@ -1,6 +1,5 @@
 "use client";
 
-import { IconGraph, IconX } from "@tabler/icons-react";
 import { useCallback, useEffect, useState } from "react";
 import { getKnowledgeGraph } from "@/app/lib/api";
 import type { GraphData } from "@/app/lib/types";
@@ -10,7 +9,7 @@ interface GraphSidePanelProps {
   sessionId: string;
 }
 
-export function GraphSidePanel({ sessionId }: GraphSidePanelProps) {
+export function GraphSidePanel({ sessionId: _sessionId }: GraphSidePanelProps) {
   const [open, setOpen] = useState(false);
   const [graphData, setGraphData] = useState<GraphData | null>(null);
 
@@ -34,24 +33,24 @@ export function GraphSidePanel({ sessionId }: GraphSidePanelProps) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="fixed right-4 top-1/2 -translate-y-1/2 z-40 rounded-full border border-border bg-background/80 backdrop-blur-sm p-3 text-muted-foreground hover:text-foreground transition-colors shadow-lg"
+        className="fixed right-4 top-1/2 -translate-y-1/2 z-40 rounded-full border border-[#40485d]/20 bg-[#050a18]/80 backdrop-blur-sm p-3 text-[#a3aac4] hover:text-[#dee5ff] transition-colors shadow-lg"
         title="Open Knowledge Graph"
       >
-        <IconGraph className="h-5 w-5" />
+        <span className="material-symbols-outlined">hub</span>
       </button>
     );
   }
 
   return (
-    <div className="w-96 border-l border-border bg-background flex flex-col shrink-0">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-        <h3 className="text-sm font-medium">Knowledge Graph</h3>
+    <div className="w-96 border-l border-[#40485d]/15 bg-[#060e20] flex flex-col shrink-0">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-[#40485d]/10">
+        <h3 className="text-sm font-medium font-headline">Knowledge Graph</h3>
         <button
           type="button"
           onClick={() => setOpen(false)}
-          className="text-muted-foreground hover:text-foreground"
+          className="text-[#a3aac4] hover:text-[#dee5ff]"
         >
-          <IconX className="h-4 w-4" />
+          <span className="material-symbols-outlined text-sm">close</span>
         </button>
       </div>
       <div className="flex-1 min-h-0">
