@@ -20,6 +20,7 @@
     "clsx": "^2.1.1",
     "framer-motion": "^12.34.5",
     "lucide-react": "^0.575.0",
+    "material-symbols": "^0.42.3",
     "next": "16.1.6",
     "radix-ui": "^1.4.3",
     "react": "19.2.3",
