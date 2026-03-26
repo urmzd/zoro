@@ -119,6 +119,7 @@ export interface ToolCall {
 }
 
 export interface ChatMessage {
+  id: string;
   role: "user" | "assistant" | "tool";
   content: string;
   toolCalls?: ToolCall[];
