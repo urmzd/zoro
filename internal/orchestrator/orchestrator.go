@@ -2,6 +2,7 @@ package orchestrator
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
@@ -79,9 +80,13 @@ func (o *Orchestrator) Subscribe(id string) <-chan models.SSEEvent {
 func (o *Orchestrator) emit(sessionID string, evt models.SSEEvent) {
 	o.mu.Lock()
 	if s := o.sessions[sessionID]; s != nil {
+		msg, err := json.Marshal(evt.Data)
+		if err != nil {
+			msg = []byte(fmt.Sprintf("%v", evt.Data))
+		}
 		s.Timeline = append(s.Timeline, models.TimelineEvent{
 			Type:      evt.Type,
-			Message:   fmt.Sprintf("%v", evt.Data),
+			Message:   string(msg),
 			Timestamp: time.Now(),
 		})
 	}
@@ -92,6 +97,7 @@ func (o *Orchestrator) emit(sessionID string, evt models.SSEEvent) {
 		select {
 		case ch <- evt:
 		default:
+			log.Printf("[orchestrator] warning: dropped event %s for session %s (slow subscriber)", evt.Type, sessionID)
 		}
 	}
 }
@@ -124,6 +130,12 @@ func (o *Orchestrator) Run(ctx context.Context, sessionID string) {
 	}
 	query := session.Query
 
+	// Check context before each major step
+	if ctx.Err() != nil {
+		o.closeSubscribers(sessionID)
+		return
+	}
+
 	// Step 1: Prior knowledge
 	o.emit(sessionID, models.SSEEvent{
 		Type: models.EventPriorKnowledge,
@@ -138,6 +150,11 @@ func (o *Orchestrator) Run(ctx context.Context, sessionID string) {
 			Type: models.EventPriorKnowledge,
 			Data: priorFacts.Facts,
 		})
+	}
+
+	if ctx.Err() != nil {
+		o.closeSubscribers(sessionID)
+		return
 	}
 
 	// Step 2: Web search
@@ -168,8 +185,17 @@ func (o *Orchestrator) Run(ctx context.Context, sessionID string) {
 		Data: results,
 	})
 
+	if ctx.Err() != nil {
+		o.closeSubscribers(sessionID)
+		return
+	}
+
 	// Step 3: Ingest each result
 	for i, result := range results {
+		if ctx.Err() != nil {
+			o.closeSubscribers(sessionID)
+			return
+		}
 		episodeBody := fmt.Sprintf("Title: %s\nURL: %s\nSnippet: %s", result.Title, result.URL, result.Snippet)
 		input := &kgtypes.EpisodeInput{
 			Name:    fmt.Sprintf("%s - Result %d", query, i+1),
@@ -203,6 +229,11 @@ func (o *Orchestrator) Run(ctx context.Context, sessionID string) {
 		}
 	}
 
+	if ctx.Err() != nil {
+		o.closeSubscribers(sessionID)
+		return
+	}
+
 	// Step 4: Get session subgraph
 	subgraph, err := o.graph.SearchFacts(ctx, query, kgtypes.WithGroupID(sessionID))
 	if err != nil {
@@ -221,6 +252,9 @@ func (o *Orchestrator) Run(ctx context.Context, sessionID string) {
 		} else {
 			var summary strings.Builder
 			for token := range rx {
+				if ctx.Err() != nil {
+					break
+				}
 				summary.WriteString(token)
 				o.emit(sessionID, models.SSEEvent{
 					Type: models.EventSummaryToken,
