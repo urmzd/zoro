@@ -1,12 +1,17 @@
 services:
   surrealdb:
-    image: surrealdb/surrealdb:latest
+    image: surrealdb/surrealdb:v3.0.4
     user: root
     command: start --user root --pass root surrealkv:/data/zoro.db
     ports:
       - "8000:8000"
     volumes:
       - zoro-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   searxng:
     image: searxng/searxng:latest
@@ -14,6 +19,11 @@ services:
       - "8888:8080"
     volumes:
       - ./searxng/settings.yml:/etc/searxng/settings.yml:ro
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   zoro-data:
