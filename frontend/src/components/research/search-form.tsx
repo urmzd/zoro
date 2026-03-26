@@ -1,9 +1,7 @@
 "use client";
 
-import { IconSearch } from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { HoverBorderGradient } from "@/components/ui/hover-border-gradient";
 
 export function SearchForm() {
   const [query, setQuery] = useState("");
@@ -13,30 +11,31 @@ export function SearchForm() {
     e.preventDefault();
     if (!query.trim()) return;
 
-    // Navigate to research page — the SSE stream starts in useResearchStream
     const id = crypto.randomUUID();
     router.push(`/research?id=${id}&q=${encodeURIComponent(query.trim())}`);
   }
 
   return (
     <form onSubmit={handleSubmit} className="w-full max-w-2xl mx-auto">
-      <HoverBorderGradient containerClassName="w-full" className="w-full px-4 py-2 gap-3">
-        <IconSearch className="h-5 w-5 text-muted-foreground shrink-0" />
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="What would you like to research?"
-          className="flex-1 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground text-base"
-        />
-        <button
-          type="submit"
-          disabled={!query.trim()}
-          className="shrink-0 rounded-full bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground transition-opacity disabled:opacity-50 hover:opacity-90"
-        >
-          Research
-        </button>
-      </HoverBorderGradient>
+      <div className="glass-panel p-1.5 rounded-2xl luminous-glow">
+        <div className="flex items-center bg-black rounded-[14px] px-6 py-4 gap-3">
+          <span className="material-symbols-outlined text-[#ba9eff] text-xl">search</span>
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="What would you like to research?"
+            className="flex-1 bg-transparent border-none outline-none text-[#dee5ff] placeholder:text-[#a3aac4]/40 text-base focus:ring-0"
+          />
+          <button
+            type="submit"
+            disabled={!query.trim()}
+            className="shrink-0 rounded-xl zoro-gradient-bg px-5 py-2 text-sm font-bold text-black transition-opacity disabled:opacity-50 hover:scale-105 active:scale-95 transition-all"
+          >
+            Research
+          </button>
+        </div>
+      </div>
     </form>
   );
 }
