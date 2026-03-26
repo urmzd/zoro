@@ -4,25 +4,24 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	surrealdb "github.com/surrealdb/surrealdb.go"
+	sdbmodels "github.com/surrealdb/surrealdb.go/pkg/models"
 
 	"github.com/urmzd/zoro/internal/models"
 )
 
 type Store struct {
-	db  *surrealdb.DB
-	ctx context.Context
+	db *surrealdb.DB
 }
 
-func New(ctx context.Context, db *surrealdb.DB) *Store {
-	return &Store{db: db, ctx: ctx}
+func New(db *surrealdb.DB) *Store {
+	return &Store{db: db}
 }
 
-func (s *Store) EnsureSchema() error {
+func (s *Store) EnsureSchema(ctx context.Context) error {
 	statements := []string{
 		"DEFINE TABLE IF NOT EXISTS chat_session SCHEMAFULL",
 		"DEFINE FIELD IF NOT EXISTS created_at ON chat_session TYPE datetime DEFAULT time::now()",
@@ -38,17 +37,17 @@ func (s *Store) EnsureSchema() error {
 	}
 
 	for _, stmt := range statements {
-		if _, err := surrealdb.Query[any](s.ctx, s.db, stmt, nil); err != nil {
+		if _, err := surrealdb.Query[any](ctx, s.db, stmt, nil); err != nil {
 			log.Printf("event schema warning: %v (statement: %s)", err, stmt)
 		}
 	}
 	return nil
 }
 
-func (s *Store) CreateSession() (string, error) {
+func (s *Store) CreateSession(ctx context.Context) (string, error) {
 	sessionID := uuid.New().String()
 
-	_, err := surrealdb.Query[any](s.ctx, s.db,
+	_, err := surrealdb.Query[any](ctx, s.db,
 		"CREATE type::record('chat_session', $id) SET created_at = time::now()",
 		map[string]any{"id": sessionID},
 	)
@@ -59,7 +58,7 @@ func (s *Store) CreateSession() (string, error) {
 	return sessionID, nil
 }
 
-func (s *Store) AppendEvent(sessionID string, event models.ChatEvent) error {
+func (s *Store) AppendEvent(ctx context.Context, sessionID string, event models.ChatEvent) error {
 	eventID := event.ID
 	if eventID == "" {
 		eventID = uuid.New().String()
@@ -79,7 +78,7 @@ func (s *Store) AppendEvent(sessionID string, event models.ChatEvent) error {
 		query += ", tool_calls = $tool_calls"
 	}
 
-	_, err := surrealdb.Query[any](s.ctx, s.db, query, params)
+	_, err := surrealdb.Query[any](ctx, s.db, query, params)
 	if err != nil {
 		return fmt.Errorf("append event: %w", err)
 	}
@@ -97,8 +96,8 @@ type eventRow struct {
 	CreatedAt time.Time         `json:"created_at"`
 }
 
-func (s *Store) GetSession(sessionID string) (*models.ChatSession, error) {
-	sessResult, err := surrealdb.Query[[]sessionRow](s.ctx, s.db,
+func (s *Store) GetSession(ctx context.Context, sessionID string) (*models.ChatSession, error) {
+	sessResult, err := surrealdb.Query[[]sessionRow](ctx, s.db,
 		"SELECT created_at FROM type::record('chat_session', $id)",
 		map[string]any{"id": sessionID},
 	)
@@ -106,7 +105,7 @@ func (s *Store) GetSession(sessionID string) (*models.ChatSession, error) {
 		return nil, fmt.Errorf("session not found: %s", sessionID)
 	}
 
-	eventResult, err := surrealdb.Query[[]eventRow](s.ctx, s.db,
+	eventResult, err := surrealdb.Query[[]eventRow](ctx, s.db,
 		"SELECT type, role, content, tool_calls, created_at FROM chat_event WHERE session_id = $id ORDER BY created_at ASC",
 		map[string]any{"id": sessionID},
 	)
@@ -130,17 +129,20 @@ func (s *Store) GetSession(sessionID string) (*models.ChatSession, error) {
 }
 
 type sessionListRow struct {
-	ID        string    `json:"id"`
-	CreatedAt time.Time `json:"created_at"`
+	ID        *sdbmodels.RecordID `json:"id"`
+	CreatedAt time.Time           `json:"created_at"`
 }
 
 type previewRow struct {
 	Content string `json:"content"`
-	Total   *int64 `json:"total"`
 }
 
-func (s *Store) ListSessions() ([]models.ChatSessionSummary, error) {
-	sessResult, err := surrealdb.Query[[]sessionListRow](s.ctx, s.db,
+type countRow struct {
+	Total int64 `json:"total"`
+}
+
+func (s *Store) ListSessions(ctx context.Context) ([]models.ChatSessionSummary, error) {
+	sessResult, err := surrealdb.Query[[]sessionListRow](ctx, s.db,
 		"SELECT id, created_at FROM chat_session ORDER BY created_at DESC",
 		nil,
 	)
@@ -154,28 +156,31 @@ func (s *Store) ListSessions() ([]models.ChatSessionSummary, error) {
 	}
 
 	for _, sess := range (*sessResult)[0].Result {
-		sessID := extractRecordID(sess.ID)
+		sessID := extractRecordIDFromModel(sess.ID)
 
-		previewResult, err := surrealdb.Query[[]previewRow](s.ctx, s.db,
-			`SELECT content,
-				(SELECT VALUE count() FROM chat_event WHERE session_id = $id GROUP ALL) AS total
-			FROM chat_event
-			WHERE session_id = $id AND role = 'user'
-			ORDER BY created_at ASC LIMIT 1`,
+		// Get preview (first user message)
+		previewResult, err := surrealdb.Query[[]previewRow](ctx, s.db,
+			`SELECT content, created_at FROM chat_event WHERE session_id = $id AND role = 'user' ORDER BY created_at ASC LIMIT 1`,
 			map[string]any{"id": sessID},
 		)
 
 		preview := ""
-		var msgCount int64
 		if err == nil && previewResult != nil && len(*previewResult) > 0 && len((*previewResult)[0].Result) > 0 {
-			p := (*previewResult)[0].Result[0]
-			preview = p.Content
+			preview = (*previewResult)[0].Result[0].Content
 			if len(preview) > 120 {
 				preview = preview[:120] + "..."
 			}
-			if p.Total != nil {
-				msgCount = *p.Total
-			}
+		}
+
+		// Get message count
+		countResult, _ := surrealdb.Query[[]countRow](ctx, s.db,
+			`SELECT count() AS total FROM chat_event WHERE session_id = $id GROUP ALL`,
+			map[string]any{"id": sessID},
+		)
+
+		var msgCount int64
+		if countResult != nil && len(*countResult) > 0 && len((*countResult)[0].Result) > 0 {
+			msgCount = (*countResult)[0].Result[0].Total
 		}
 
 		summaries = append(summaries, models.ChatSessionSummary{
@@ -189,9 +194,9 @@ func (s *Store) ListSessions() ([]models.ChatSessionSummary, error) {
 	return summaries, nil
 }
 
-func extractRecordID(recordID string) string {
-	if pos := strings.LastIndex(recordID, ":"); pos >= 0 {
-		return recordID[pos+1:]
+func extractRecordIDFromModel(rid *sdbmodels.RecordID) string {
+	if rid == nil {
+		return ""
 	}
-	return recordID
+	return fmt.Sprintf("%v", rid.ID)
 }
