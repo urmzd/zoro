@@ -41,7 +41,7 @@ export function SessionSubgraph({ entities, relations, graphData }: SessionSubgr
   }, [entities, graphData]);
 
   const data = useMemo(() => {
-    if (graphData && graphData.nodes && graphData.nodes.length > 0) {
+    if (graphData?.nodes && graphData.nodes.length > 0) {
       return {
         nodes: graphData.nodes.map((n) => ({
           id: n.id,

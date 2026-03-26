@@ -1,12 +1,13 @@
 "use client";
 
-import { type ComponentType, Suspense, lazy, useEffect, useState } from "react";
+import { type ComponentType, Suspense, useEffect, useState } from "react";
 
 // biome-ignore lint/suspicious/noExplicitAny: wraps dynamic third-party component
 let ForceGraph2DLazy: ComponentType<any> | null = null;
 
 // biome-ignore lint/suspicious/noExplicitAny: wraps dynamic third-party component
 export function LazyForceGraph2D(props: any) {
+  // biome-ignore lint/suspicious/noExplicitAny: wraps dynamic third-party component
   const [Component, setComponent] = useState<ComponentType<any> | null>(null);
 
   useEffect(() => {
