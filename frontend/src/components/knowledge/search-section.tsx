@@ -1,6 +1,5 @@
 "use client";
 
-import { IconLoader2, IconSearch } from "@tabler/icons-react";
 import { useState } from "react";
 
 interface SearchSectionProps {
@@ -18,32 +17,33 @@ export function SearchSection({ onSearch, isStreaming }: SearchSectionProps) {
   }
 
   return (
-    <section className="border-b border-border/50 bg-background/60 backdrop-blur-sm px-4 py-5">
-      <div className="mx-auto max-w-4xl space-y-3">
-        <h2 className="text-lg font-semibold tracking-tight text-foreground">Explore Knowledge</h2>
-        <form onSubmit={handleSubmit} className="flex items-center gap-3">
-          <div className="flex flex-1 items-center gap-3 rounded-2xl border border-border bg-background/80 backdrop-blur-sm px-4 py-3">
-            {isStreaming ? (
-              <IconLoader2 className="h-5 w-5 text-muted-foreground shrink-0 animate-spin" />
-            ) : (
-              <IconSearch className="h-5 w-5 text-muted-foreground shrink-0" />
-            )}
+    <section className="py-6 shrink-0 px-8">
+      <div className="max-w-4xl mx-auto relative group">
+        <div className="absolute -inset-1 bg-gradient-to-r from-[#ba9eff]/20 via-[#699cff]/10 to-[#ff716a]/20 rounded-2xl blur-xl opacity-50 group-focus-within:opacity-100 transition-opacity" />
+        <form onSubmit={handleSubmit}>
+          <div className="relative flex items-center bg-black border border-[#40485d]/30 rounded-2xl px-6 py-4 luminous-glow">
+            <span className="material-symbols-outlined text-[#8455ef] mr-4">psychology</span>
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search your knowledge graph..."
+              placeholder="Explore neural pathways... e.g., 'How are the Q3 market trends linked to sustainable logistics?'"
               disabled={isStreaming}
-              className="flex-1 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground text-base"
+              className="flex-1 bg-transparent border-none focus:ring-0 text-[#dee5ff] placeholder-[#a3aac4]/50 text-lg font-light"
             />
+            <div className="flex items-center gap-3">
+              <span className="px-2 py-1 rounded bg-[#141f38] text-[10px] text-[#a3aac4] font-bold border border-[#40485d]/20">
+                ⌘ K
+              </span>
+              <button
+                type="submit"
+                disabled={isStreaming || !query.trim()}
+                className="p-2 bg-[#ba9eff] rounded-lg text-black hover:bg-[#a27cff] transition-colors disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined">arrow_forward</span>
+              </button>
+            </div>
           </div>
-          <button
-            type="submit"
-            disabled={isStreaming || !query.trim()}
-            className="shrink-0 rounded-full bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white transition-opacity disabled:opacity-50 hover:opacity-90"
-          >
-            Search
-          </button>
         </form>
       </div>
     </section>
