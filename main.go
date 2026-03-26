@@ -40,8 +40,9 @@ func main() {
 		e.Close()
 	}()
 
-	log.Println("Zoro backend starting on :8080")
-	if err := e.Start(":8080"); err != nil {
+	addr := ":" + cfg.Port
+	log.Printf("Zoro backend starting on %s", addr)
+	if err := e.Start(addr); err != nil {
 		log.Printf("server stopped: %v", err)
 	}
 }
