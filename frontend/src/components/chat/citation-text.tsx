@@ -29,11 +29,6 @@ function extractSources(toolCalls: ToolCall[]): Map<number, SourceInfo> {
 
 const CITATION_RE = /\[(\d+)\]/g;
 
-interface CitationTextProps {
-  content: string;
-  toolCalls: ToolCall[];
-}
-
 export function injectCitationLinks(content: string, toolCalls: ToolCall[]): string {
   const sources = extractSources(toolCalls);
   if (sources.size === 0) return content;

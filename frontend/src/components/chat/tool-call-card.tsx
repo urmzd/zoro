@@ -67,9 +67,7 @@ function WebSearchResults({ results }: { results: SearchResultItem[] }) {
             <div className="text-xs font-medium text-[#dee5ff] group-hover:text-[#ba9eff] transition-colors truncate">
               {r.title}
             </div>
-            <div className="text-[10px] text-[#a3aac4]/60 truncate mt-0.5">
-              {getDomain(r.url)}
-            </div>
+            <div className="text-[10px] text-[#a3aac4]/60 truncate mt-0.5">{getDomain(r.url)}</div>
             <div className="text-[11px] text-[#a3aac4]/70 line-clamp-2 mt-1 leading-relaxed">
               {r.snippet}
             </div>
@@ -93,7 +91,10 @@ export function ToolCallCard({ toolCall }: ToolCallCardProps) {
   const isLoading = !toolCall.result;
 
   const searchResults = useMemo(
-    () => (toolCall.name === "web_search" && toolCall.result ? parseSearchResults(toolCall.result) : null),
+    () =>
+      toolCall.name === "web_search" && toolCall.result
+        ? parseSearchResults(toolCall.result)
+        : null,
     [toolCall.name, toolCall.result],
   );
 
@@ -139,13 +140,11 @@ export function ToolCallCard({ toolCall }: ToolCallCardProps) {
           ) : (
             <div className="text-xs font-mono text-[#a3aac4]/80">
               <div className="mb-2">
-                <span className="text-[#699cff]">args:</span>{" "}
-                {toolCall.arguments}
+                <span className="text-[#699cff]">args:</span> {toolCall.arguments}
               </div>
               {toolCall.result && (
                 <div className="max-h-40 overflow-y-auto">
-                  <span className="text-[#ff716a]">result:</span>{" "}
-                  {toolCall.result}
+                  <span className="text-[#ff716a]">result:</span> {toolCall.result}
                 </div>
               )}
             </div>

@@ -44,7 +44,9 @@ export default function LogsPage() {
               {autoRefresh && (
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#ba9eff] opacity-75" />
               )}
-              <span className={`relative inline-flex rounded-full h-2 w-2 ${autoRefresh ? "bg-[#ba9eff]" : "bg-[#6d758c]"}`} />
+              <span
+                className={`relative inline-flex rounded-full h-2 w-2 ${autoRefresh ? "bg-[#ba9eff]" : "bg-[#6d758c]"}`}
+              />
             </div>
             <label className="text-sm font-medium cursor-pointer flex items-center gap-2">
               Auto-refresh
@@ -53,7 +55,9 @@ export default function LogsPage() {
                 onClick={() => setAutoRefresh(!autoRefresh)}
                 className={`w-8 h-4 rounded-full relative transition-colors ${autoRefresh ? "bg-[#ba9eff]" : "bg-[#40485d]"}`}
               >
-                <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${autoRefresh ? "right-0.5" : "left-0.5"}`} />
+                <div
+                  className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${autoRefresh ? "right-0.5" : "left-0.5"}`}
+                />
               </button>
             </label>
           </div>
@@ -74,9 +78,27 @@ export default function LogsPage() {
         <div className="col-span-12 lg:col-span-4 grid grid-cols-1 gap-4">
           {status && (
             <>
-              <StatusCard name="SurrealDB" description="Vector Engine" icon="database" iconColor="text-[#ba9eff]" ok={status.surrealdb} />
-              <StatusCard name="SearXNG" description="Metasearch Node" icon="travel_explore" iconColor="text-[#699cff]" ok={status.searxng} />
-              <StatusCard name="Ollama" description="Inference Backend" icon="memory" iconColor="text-[#ff716a]" ok={status.ollama} />
+              <StatusCard
+                name="SurrealDB"
+                description="Vector Engine"
+                icon="database"
+                iconColor="text-[#ba9eff]"
+                ok={status.surrealdb}
+              />
+              <StatusCard
+                name="SearXNG"
+                description="Metasearch Node"
+                icon="travel_explore"
+                iconColor="text-[#699cff]"
+                ok={status.searxng}
+              />
+              <StatusCard
+                name="Ollama"
+                description="Inference Backend"
+                icon="memory"
+                iconColor="text-[#ff716a]"
+                ok={status.ollama}
+              />
             </>
           )}
         </div>
@@ -156,9 +178,13 @@ function StatusCard({
           <p className="text-xs text-[#a3aac4]">{description}</p>
         </div>
       </div>
-      <div className={`flex items-center gap-2 px-3 py-1 rounded-full ${ok ? "bg-emerald-500/10" : "bg-red-500/10"}`}>
+      <div
+        className={`flex items-center gap-2 px-3 py-1 rounded-full ${ok ? "bg-emerald-500/10" : "bg-red-500/10"}`}
+      >
         <div className={`h-1.5 w-1.5 rounded-full ${ok ? "bg-emerald-500" : "bg-red-500"}`} />
-        <span className={`text-[10px] font-bold uppercase ${ok ? "text-emerald-500" : "text-red-500"}`}>
+        <span
+          className={`text-[10px] font-bold uppercase ${ok ? "text-emerald-500" : "text-red-500"}`}
+        >
           {ok ? "Active" : "Down"}
         </span>
       </div>

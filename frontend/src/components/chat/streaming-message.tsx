@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
 import { code } from "@streamdown/code";
+import { useMemo } from "react";
 import { Streamdown } from "streamdown";
 import type { ToolCall } from "@/app/lib/types";
 import { injectCitationLinks } from "./citation-text";
@@ -39,12 +39,19 @@ export function StreamingMessage({ content, toolCalls }: StreamingMessageProps) 
 
       {!hasContent ? (
         <div className="flex items-center gap-1.5 px-4 py-3 rounded-xl bg-[#050a18] border border-[#40485d]/5">
-          <div className="w-2 h-2 rounded-full bg-[#ba9eff] typing-pulse" style={{ animationDelay: "0s" }} />
-          <div className="w-2 h-2 rounded-full bg-[#ba9eff] typing-pulse" style={{ animationDelay: "0.2s" }} />
-          <div className="w-2 h-2 rounded-full bg-[#ba9eff] typing-pulse" style={{ animationDelay: "0.4s" }} />
-          <span className="ml-2 text-xs text-[#a3aac4] italic">
-            Zoro is synthesizing data...
-          </span>
+          <div
+            className="w-2 h-2 rounded-full bg-[#ba9eff] typing-pulse"
+            style={{ animationDelay: "0s" }}
+          />
+          <div
+            className="w-2 h-2 rounded-full bg-[#ba9eff] typing-pulse"
+            style={{ animationDelay: "0.2s" }}
+          />
+          <div
+            className="w-2 h-2 rounded-full bg-[#ba9eff] typing-pulse"
+            style={{ animationDelay: "0.4s" }}
+          />
+          <span className="ml-2 text-xs text-[#a3aac4] italic">Zoro is synthesizing data...</span>
         </div>
       ) : (
         <>

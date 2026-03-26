@@ -120,12 +120,20 @@ export function KnowledgeGraph() {
       <div className="absolute top-6 left-6 z-10 p-4 bg-[#050a18]/60 backdrop-blur-md rounded-xl border border-[#40485d]/10">
         <div className="flex items-center gap-6">
           <div className="flex flex-col">
-            <span className="text-[10px] text-[#a3aac4] font-bold uppercase tracking-widest">Nodes</span>
-            <span className="text-xl font-headline font-bold">{data.nodes.length.toLocaleString()}</span>
+            <span className="text-[10px] text-[#a3aac4] font-bold uppercase tracking-widest">
+              Nodes
+            </span>
+            <span className="text-xl font-headline font-bold">
+              {data.nodes.length.toLocaleString()}
+            </span>
           </div>
           <div className="flex flex-col">
-            <span className="text-[10px] text-[#a3aac4] font-bold uppercase tracking-widest">Edges</span>
-            <span className="text-xl font-headline font-bold">{data.links.length.toLocaleString()}</span>
+            <span className="text-[10px] text-[#a3aac4] font-bold uppercase tracking-widest">
+              Edges
+            </span>
+            <span className="text-xl font-headline font-bold">
+              {data.links.length.toLocaleString()}
+            </span>
           </div>
         </div>
       </div>
@@ -133,7 +141,9 @@ export function KnowledgeGraph() {
       {/* Graph */}
       {isLoading ? (
         <div className="flex h-full items-center justify-center text-[#a3aac4]">
-          <span className="material-symbols-outlined text-3xl mr-3 animate-spin">progress_activity</span>
+          <span className="material-symbols-outlined text-3xl mr-3 animate-spin">
+            progress_activity
+          </span>
           Loading knowledge graph...
         </div>
       ) : data.nodes.length === 0 ? (
@@ -193,12 +203,14 @@ export function KnowledgeGraph() {
       {/* Legend */}
       <div className="absolute bottom-6 right-6 z-10 p-4 bg-[#050a18]/60 backdrop-blur-md rounded-xl border border-[#40485d]/10">
         <div className="flex gap-4">
-          {Object.entries(NODE_COLORS).slice(0, 4).map(([type, color]) => (
-            <div key={type} className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
-              <span className="text-[10px] font-bold text-[#a3aac4] uppercase">{type}</span>
-            </div>
-          ))}
+          {Object.entries(NODE_COLORS)
+            .slice(0, 4)
+            .map(([type, color]) => (
+              <div key={type} className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
+                <span className="text-[10px] font-bold text-[#a3aac4] uppercase">{type}</span>
+              </div>
+            ))}
         </div>
       </div>
     </div>

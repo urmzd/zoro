@@ -65,10 +65,7 @@ export function KnowledgeSearch() {
           ) : (
             <div className="space-y-2 max-h-[40vh] overflow-y-auto">
               {results.map((fact, i) => (
-                <div
-                  key={fact.uuid ?? i}
-                  className="rounded-xl glass-card px-4 py-3 text-sm"
-                >
+                <div key={fact.uuid ?? i} className="rounded-xl glass-card px-4 py-3 text-sm">
                   {(fact.source_node?.name || fact.target_node?.name) && (
                     <div className="flex items-center gap-2 mb-1">
                       {fact.source_node?.name && (

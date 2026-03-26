@@ -94,9 +94,7 @@ export function SidebarHistory() {
                 onClick={() => handleSelect(s.id)}
                 className={cn(
                   "group w-full text-left px-2.5 py-1.5 rounded-md transition-all",
-                  activeId === s.id
-                    ? "bg-[#141f38]"
-                    : "hover:bg-[#141f38]",
+                  activeId === s.id ? "bg-[#141f38]" : "hover:bg-[#141f38]",
                 )}
               >
                 <p className="text-[13px] text-[#a3aac4] group-hover:text-[#dee5ff] truncate">

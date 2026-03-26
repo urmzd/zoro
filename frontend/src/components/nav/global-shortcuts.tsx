@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { createChatSession } from "@/app/lib/api";
 
 export function GlobalShortcuts() {

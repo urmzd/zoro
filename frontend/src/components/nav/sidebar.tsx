@@ -49,9 +49,7 @@ export function Sidebar() {
           <div className="flex items-center gap-3 shrink-0">
             {!collapsed && (
               <Link href="/">
-                <h1 className="text-lg font-bold tracking-tight text-white font-headline">
-                  Zoro
-                </h1>
+                <h1 className="text-lg font-bold tracking-tight text-white font-headline">Zoro</h1>
               </Link>
             )}
           </div>
@@ -119,11 +117,7 @@ export function Sidebar() {
       {/* Session history */}
       {!collapsed && (
         <div className="flex-1 overflow-y-auto min-h-0 mt-4 no-scrollbar">
-          <Suspense
-            fallback={
-              <div className="px-4 py-2 text-xs text-[#a3aac4]">Loading...</div>
-            }
-          >
+          <Suspense fallback={<div className="px-4 py-2 text-xs text-[#a3aac4]">Loading...</div>}>
             <SidebarHistory />
           </Suspense>
         </div>

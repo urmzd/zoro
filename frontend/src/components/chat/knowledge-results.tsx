@@ -57,7 +57,9 @@ export function KnowledgeResults({ results, searched, loading }: KnowledgeResult
       {results.length > 0 && results[0].fact && (
         <div className="glass-panel p-8 rounded-3xl border border-[#40485d]/15 relative overflow-hidden">
           <div className="absolute top-0 right-0 p-4">
-            <span className="material-symbols-outlined text-[#a3aac4]/20 text-6xl">auto_awesome</span>
+            <span className="material-symbols-outlined text-[#a3aac4]/20 text-6xl">
+              auto_awesome
+            </span>
           </div>
           <div className="max-w-2xl">
             <h4 className="font-headline text-xl font-bold mb-4 flex items-center gap-2">

@@ -169,8 +169,7 @@ export default function Home() {
 
       <div className="w-full max-w-4xl text-center mb-16">
         <h2 className="font-headline text-5xl md:text-7xl font-bold tracking-tight mb-6">
-          What should we{" "}
-          <span className="zoro-gradient-text">uncover</span> today?
+          What should we <span className="zoro-gradient-text">uncover</span> today?
         </h2>
         <p className="text-[#a3aac4] text-lg max-w-2xl mx-auto font-light">
           Query the Luminous Intelligence core for structured facts or creative dialogue.
@@ -253,9 +252,7 @@ export default function Home() {
       </div>
 
       {/* Loading status */}
-      {statusLabel && (
-        <p className="text-sm text-[#a3aac4] animate-pulse mt-8">{statusLabel}</p>
-      )}
+      {statusLabel && <p className="text-sm text-[#a3aac4] animate-pulse mt-8">{statusLabel}</p>}
 
       {/* Knowledge results */}
       {knowledgeSearched && (

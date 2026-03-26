@@ -15,9 +15,8 @@ export default function HelpPage() {
               Local-First Intelligence.
             </h2>
             <p className="text-xl text-[#a3aac4] max-w-xl leading-relaxed font-light">
-              Zoro is a privacy-centric AI companion built for high-performance knowledge
-              synthesis. It lives on your machine, respects your data, and scales with your
-              hardware.
+              Zoro is a privacy-centric AI companion built for high-performance knowledge synthesis.
+              It lives on your machine, respects your data, and scales with your hardware.
             </p>
             <div className="mt-8 flex gap-4">
               <a
@@ -111,9 +110,24 @@ export default function HelpPage() {
             <h3 className="font-headline text-3xl font-bold">Model Inventory</h3>
             <div className="bg-[#0f1930] rounded-3xl p-8 border border-[#40485d]/10">
               <ul className="space-y-6">
-                <ModelBar name="qwen3.5:4b" role="Default Chat" color="bg-[#ba9eff]" width="w-full" />
-                <ModelBar name="qwen3.5:0.8b" role="Fast Summary" color="bg-[#ff716a]" width="w-1/3" />
-                <ModelBar name="nomic-embed-text" role="Embeddings" color="bg-[#699cff]" width="w-2/3" />
+                <ModelBar
+                  name="qwen3.5:4b"
+                  modelRole="Default Chat"
+                  color="bg-[#ba9eff]"
+                  width="w-full"
+                />
+                <ModelBar
+                  name="qwen3.5:0.8b"
+                  modelRole="Fast Summary"
+                  color="bg-[#ff716a]"
+                  width="w-1/3"
+                />
+                <ModelBar
+                  name="nomic-embed-text"
+                  modelRole="Embeddings"
+                  color="bg-[#699cff]"
+                  width="w-2/3"
+                />
               </ul>
             </div>
           </div>
@@ -211,7 +225,9 @@ function ServiceCard({
   return (
     <div className="flex items-center justify-between p-4 glass-panel rounded-2xl border border-[#40485d]/10">
       <div className="flex items-center gap-4">
-        <div className={`w-10 h-10 rounded-full ${iconColor.replace("text-", "bg-")}/10 flex items-center justify-center`}>
+        <div
+          className={`w-10 h-10 rounded-full ${iconColor.replace("text-", "bg-")}/10 flex items-center justify-center`}
+        >
           <span className={`material-symbols-outlined ${iconColor} text-xl`}>{icon}</span>
         </div>
         <div>
@@ -225,12 +241,12 @@ function ServiceCard({
 
 function ModelBar({
   name,
-  role,
+  modelRole,
   color,
   width,
 }: {
   name: string;
-  role: string;
+  modelRole: string;
   color: string;
   width: string;
 }) {
@@ -238,7 +254,7 @@ function ModelBar({
     <li className="flex flex-col gap-1">
       <div className="flex justify-between items-center">
         <span className={`font-bold ${color.replace("bg-", "text-")}`}>{name}</span>
-        <span className="text-xs text-[#a3aac4]">{role}</span>
+        <span className="text-xs text-[#a3aac4]">{modelRole}</span>
       </div>
       <div className="w-full h-1 bg-[#192540] rounded-full overflow-hidden">
         <div className={`${width} h-full ${color}`} />
