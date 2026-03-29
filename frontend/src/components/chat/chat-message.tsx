@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
 import { code } from "@streamdown/code";
 import { useMemo } from "react";
 import { Streamdown } from "streamdown";

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Manrope, Space_Grotesk } from "next/font/google";
-import { Sidebar } from "@/components/nav/sidebar";
 import { GlobalShortcuts } from "@/components/nav/global-shortcuts";
+import { Sidebar } from "@/components/nav/sidebar";
 import "./globals.css";
 
 const spaceGrotesk = Space_Grotesk({
