@@ -1,4 +1,5 @@
 name: Release
+
 on:
   push:
     branches: [main]
@@ -9,8 +10,17 @@ on:
         type: boolean
         default: false
 
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
   release:
+    name: Release
+    needs: ci
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -29,6 +39,11 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
 
       - uses: urmzd/sr@v2
+        id: sr
         with:
           github-token: ${{ steps.app-token.outputs.token }}
-          force: ${{ github.event.inputs.force || 'false' }}
+          force: ${{ inputs.force || false }}
+
+    outputs:
+      released: ${{ steps.sr.outputs.released }}
+      tag: ${{ steps.sr.outputs.tag }}

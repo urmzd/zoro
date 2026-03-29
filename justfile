@@ -106,6 +106,18 @@ dev-desktop:
 
 # ── Checks ───────────────────────────────────────────────────────────
 
+# Run golangci-lint
+lint:
+    golangci-lint run ./...
+
+# Run govulncheck
+vuln:
+    govulncheck ./...
+
+# Tidy modules
+tidy:
+    go mod tidy
+
 # Run all checks
 check: check-go check-frontend
 
@@ -116,6 +128,9 @@ check-go:
 # Lint and typecheck frontend
 check-frontend:
     cd frontend && npx biome check . && npx tsc --noEmit
+
+# Full CI gate
+ci: check-go check-frontend build
 
 # ── Code generation ─────────────────────────────────────────────────
 
