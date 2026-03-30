@@ -37,13 +37,13 @@ dev:
     docker compose up -d
 
     # Run MCP server on stdio
-    go run .
+    go run . serve
 
-# Build the MCP server binary
+# Build the binary
 build:
     go build -o zoro .
 
-# Install the MCP server binary
+# Install the binary
 install:
     go install .
 
