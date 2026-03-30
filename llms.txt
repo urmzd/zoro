@@ -1,0 +1,20 @@
+# Zoro
+
+> Privacy-first research agent that builds a personal knowledge graph on your machine.
+
+Zoro searches the web, extracts entities and relationships using local LLMs (via Ollama), and stores everything in a local PostgreSQL + pgvector database. It exposes capabilities as an MCP server for tool-aware clients (Claude Code, Cursor) and as a standalone CLI.
+
+## Key Concepts
+
+- Knowledge Graph: entities and relationships extracted from web content, stored locally
+- MCP Server: Model Context Protocol interface over stdio for AI assistant integration
+- Deep Research: automated pipeline — web search via SearXNG, knowledge ingestion, LLM synthesis
+- Multi-turn Chat: conversational agent with session persistence
+
+## Links
+
+- [Source](https://github.com/urmzd/zoro)
+- [Releases](https://github.com/urmzd/zoro/releases)
+- [Go Docs](https://pkg.go.dev/github.com/urmzd/zoro)
+- [saige (core library)](https://github.com/urmzd/saige)
+- [MCP Go SDK](https://github.com/modelcontextprotocol/go-sdk)
