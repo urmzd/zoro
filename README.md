@@ -15,9 +15,12 @@
   <a href="https://github.com/urmzd/zoro/actions/workflows/ci.yml"><img src="https://github.com/urmzd/zoro/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
 </p>
 
-<p align="center">
-  <img src="showcase/cli-help.gif" alt="CLI help" width="45%"> &nbsp; <img src="showcase/cli-search.gif" alt="Web search" width="45%">
-</p>
+<table align="center" width="100%">
+  <tr>
+    <td align="center" width="50%"><img src="showcase/cli-help.gif" alt="CLI help" width="100%"></td>
+    <td align="center" width="50%"><img src="showcase/cli-search.gif" alt="Web search" width="100%"></td>
+  </tr>
+</table>
 
 Zoro searches the web, extracts entities and relationships using local LLMs, and stores everything locally — your data never leaves your machine. It works as an [MCP](https://modelcontextprotocol.io/) server for Claude Code, Cursor, and other MCP clients, or as a standalone CLI.
 
