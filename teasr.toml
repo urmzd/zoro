@@ -1,0 +1,51 @@
+[output]
+dir = "./showcase"
+formats = [{ output_type = "gif" }, { output_type = "png" }]
+
+[[scenes]]
+type = "terminal"
+name = "cli-help"
+theme = "dracula"
+cols = 80
+rows = 16
+frame_duration = 80
+
+[[scenes.interactions]]
+type = "type"
+text = "zoro help"
+speed = 50
+
+[[scenes.interactions]]
+type = "key"
+key = "enter"
+
+[[scenes.interactions]]
+type = "wait"
+duration = 1500
+
+[[scenes.interactions]]
+type = "snapshot"
+
+[[scenes]]
+type = "terminal"
+name = "cli-search"
+theme = "dracula"
+cols = 90
+rows = 24
+frame_duration = 80
+
+[[scenes.interactions]]
+type = "type"
+text = "zoro search rust async runtime comparison"
+speed = 40
+
+[[scenes.interactions]]
+type = "key"
+key = "enter"
+
+[[scenes.interactions]]
+type = "wait"
+duration = 8000
+
+[[scenes.interactions]]
+type = "snapshot"

@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"time"
 )
 
@@ -33,7 +35,7 @@ func (p *SearXNGProcess) Stop() error {
 	select {
 	case <-done:
 	case <-time.After(5 * time.Second):
-		p.cmd.Process.Kill()
+		_ = p.cmd.Process.Kill()
 	}
 	return nil
 }
@@ -66,7 +68,7 @@ app.run(host="127.0.0.1", port=%d)
 	}
 
 	if err := waitForHealth(fmt.Sprintf("http://127.0.0.1:%d", port), 60*time.Second); err != nil {
-		cmd.Process.Kill()
+		_ = cmd.Process.Kill()
 		return nil, fmt.Errorf("searxng not ready: %w", err)
 	}
 
@@ -108,7 +110,7 @@ func ensureSearXNGVenv(venvDir string) error {
 	depCmd.Stdout = os.Stderr
 	depCmd.Stderr = os.Stderr
 	if err := depCmd.Run(); err != nil {
-		os.RemoveAll(venvDir)
+		_ = os.RemoveAll(venvDir)
 		return fmt.Errorf("pip install setuptools: %w", err)
 	}
 
@@ -120,10 +122,31 @@ func ensureSearXNGVenv(venvDir string) error {
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
 		// Clean up broken venv
-		os.RemoveAll(venvDir)
+		_ = os.RemoveAll(venvDir)
 		return fmt.Errorf("pip install searxng: %w", err)
 	}
 
 	log.Println("[searxng] installed")
 	return nil
+}
+
+func waitForHealth(url string, timeout time.Duration) error {
+	deadline := time.Now().Add(timeout)
+	client := &http.Client{Timeout: 2 * time.Second}
+	attempt := 0
+	for time.Now().Before(deadline) {
+		attempt++
+		resp, err := client.Get(url)
+		if err == nil {
+			_ = resp.Body.Close()
+			if resp.StatusCode == http.StatusOK {
+				return nil
+			}
+		}
+		if attempt%10 == 0 {
+			log.Printf("[health] waiting (attempt %d, url: %s)...", attempt, url)
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
+	return fmt.Errorf("timeout after %s (%d attempts, url: %s)", timeout, attempt, strconv.Quote(url))
 }

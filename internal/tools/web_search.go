@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/urmzd/adk/core"
-	"github.com/urmzd/kgdk/kgtypes"
+	"github.com/urmzd/saige/agent/types"
+	kgtypes "github.com/urmzd/saige/knowledge/types"
 	"github.com/urmzd/zoro/internal/searcher"
 )
 
@@ -18,7 +18,7 @@ type searchResultJSON struct {
 	Snippet string `json:"snippet"`
 }
 
-// WebSearchTool implements core.Tool for web searching.
+// WebSearchTool implements types.Tool for web searching.
 type WebSearchTool struct {
 	searcher *searcher.Searcher
 	graph    kgtypes.Graph
@@ -33,14 +33,14 @@ func (t *WebSearchTool) WithGroupID(id string) *WebSearchTool {
 	return &WebSearchTool{searcher: t.searcher, graph: t.graph, groupID: id}
 }
 
-func (t *WebSearchTool) Definition() core.ToolDef {
-	return core.ToolDef{
+func (t *WebSearchTool) Definition() types.ToolDef {
+	return types.ToolDef{
 		Name:        "web_search",
 		Description: "Search the web for current information on a topic. Returns a JSON array of results with index, title, url, and snippet. Use the index numbers as citation references [1], [2], etc.",
-		Parameters: core.ParameterSchema{
+		Parameters: types.ParameterSchema{
 			Type:     "object",
 			Required: []string{"query"},
-			Properties: map[string]core.PropertyDef{
+			Properties: map[string]types.PropertyDef{
 				"query": {Type: "string", Description: "The search query"},
 			},
 		},

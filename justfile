@@ -7,25 +7,21 @@ download:
     ollama pull qwen3.5:0.8b
     ollama pull nomic-embed-text
 
-
 # Full first-time setup: install deps, pull models, start services
 setup: download
     #!/usr/bin/env bash
     set -euo pipefail
 
-    echo "Installing frontend dependencies..."
-    cd frontend && npm install && cd ..
-
     echo "Fetching Go dependencies..."
     go mod tidy
 
-    echo "Starting SurrealDB + SearXNG via Docker..."
+    echo "Starting PostgreSQL + SearXNG via Docker..."
     docker compose up -d
 
     echo ""
-    echo "Done! Run 'just dev' to start."
+    echo "Done! Run 'just dev' to start the MCP server."
 
-# Run in development mode (Go server + Next.js dev server)
+# Run MCP server (starts Docker services + Ollama if needed)
 dev:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -40,69 +36,20 @@ dev:
     # Ensure Docker services are running
     docker compose up -d
 
-    # Start Go backend
-    go run . &
-    GO_PID=$!
+    # Run MCP server on stdio
+    go run . serve
 
-    # Start Next.js frontend
-    cd frontend && npm run dev &
-    NEXT_PID=$!
-
-    # Wait for either to exit
-    trap "kill $GO_PID $NEXT_PID 2>/dev/null" EXIT
-    wait
-
-# Build the production web server
+# Build the binary
 build:
-    docker compose up -d
     go build -o zoro .
-    cd frontend && npm run build
+
+# Install the binary
+install:
+    go install .
 
 # Stop Docker services
 stop:
     docker compose down
-
-# ── Desktop (Wails) ──────────────────────────────────────────────────
-
-# Build desktop app (SurrealDB + SearXNG are set up on first launch)
-build-desktop:
-    #!/usr/bin/env bash
-    set -euo pipefail
-
-    echo "Building frontend static export..."
-    cd frontend && NEXT_BUILD_TARGET=desktop npm run build && cd ..
-
-    echo "Copying frontend assets for embed..."
-    rm -rf cmd/desktop/assets
-    cp -r frontend/out cmd/desktop/assets
-
-    echo "Building desktop binary..."
-    CGO_LDFLAGS="-framework UniformTypeIdentifiers" go build -tags desktop,production -o zoro-desktop ./cmd/desktop
-
-    echo ""
-    echo "Done! Run ./zoro-desktop to launch."
-    echo "  First launch downloads SurrealDB and installs SearXNG into a local venv."
-    echo "  Requires: Ollama, Python 3.10+"
-
-# Run desktop app in dev mode (no Docker needed)
-dev-desktop:
-    #!/usr/bin/env bash
-    set -euo pipefail
-
-    # Start Ollama if needed
-    if ! curl -sf http://localhost:11434/api/tags > /dev/null 2>&1; then
-        echo "Starting Ollama..."
-        ollama serve &
-        sleep 2
-    fi
-
-    # Build frontend for embedding
-    cd frontend && NEXT_BUILD_TARGET=desktop npm run build && cd ..
-    rm -rf cmd/desktop/assets
-    cp -r frontend/out cmd/desktop/assets
-
-    # Run desktop app (manages SurrealDB + SearXNG as subprocesses)
-    CGO_LDFLAGS="-framework UniformTypeIdentifiers" go run -tags desktop,dev ./cmd/desktop
 
 # ── Checks ───────────────────────────────────────────────────────────
 
@@ -119,24 +66,15 @@ tidy:
     go mod tidy
 
 # Run all checks
-check: check-go check-frontend
-
-# Lint and vet Go
-check-go:
+check:
     go vet ./...
 
-# Lint and typecheck frontend
-check-frontend:
-    cd frontend && npx biome check . && npx tsc --noEmit
+# Run tests
+test:
+    go test -race -count=1 ./...
 
 # Full CI gate
-ci: check-go check-frontend build
-
-# ── Code generation ─────────────────────────────────────────────────
-
-# Generate frontend API client from OpenAPI spec
-generate:
-    oag generate
+ci: check test build
 
 # ── Utilities ────────────────────────────────────────────────────────
 

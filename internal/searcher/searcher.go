@@ -51,7 +51,7 @@ func (s *Searcher) Search(ctx context.Context, query string) ([]models.SearchRes
 	if err != nil {
 		return nil, fmt.Errorf("searxng search request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("searxng returned %d", resp.StatusCode)
