@@ -105,7 +105,7 @@ func TestWebSearchTool_Execute(t *testing.T) {
 			URL     string `json:"url"`
 			Content string `json:"content"`
 		}
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"results": []result{
 				{Title: "Test", URL: "https://example.com", Content: "Snippet"},
 			},
@@ -137,7 +137,7 @@ func TestWebSearchTool_Execute(t *testing.T) {
 func TestWebSearchTool_TruncatesSnippet(t *testing.T) {
 	longSnippet := strings.Repeat("a", 300)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"results": []map[string]string{
 				{"title": "Test", "url": "https://example.com", "content": longSnippet},
 			},
@@ -154,7 +154,7 @@ func TestWebSearchTool_TruncatesSnippet(t *testing.T) {
 	}
 
 	var items []searchResultJSON
-	json.Unmarshal([]byte(result), &items)
+	_ = json.Unmarshal([]byte(result), &items)
 	if len(items[0].Snippet) > 204 { // 200 + "..."
 		t.Errorf("snippet not truncated: len=%d", len(items[0].Snippet))
 	}
@@ -162,7 +162,7 @@ func TestWebSearchTool_TruncatesSnippet(t *testing.T) {
 
 func TestWebSearchTool_NoResults(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{"results": []any{}})
+		_ = json.NewEncoder(w).Encode(map[string]any{"results": []any{}})
 	}))
 	defer srv.Close()
 
@@ -188,7 +188,7 @@ func TestWebSearchTool_WithGroupID(t *testing.T) {
 
 func TestWebSearchTool_AutoIngests(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"results": []map[string]string{
 				{"title": "R1", "url": "https://a.com", "content": "S1"},
 				{"title": "R2", "url": "https://b.com", "content": "S2"},

@@ -92,7 +92,7 @@ func getText(t *testing.T, result *gomcp.CallToolResult) string {
 	var c struct {
 		Text string `json:"text"`
 	}
-	json.Unmarshal(b, &c)
+	_ = json.Unmarshal(b, &c)
 	return c.Text
 }
 
@@ -100,7 +100,7 @@ func getText(t *testing.T, result *gomcp.CallToolResult) string {
 
 func TestWebSearchHandler_Success(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"results": []map[string]string{
 				{"title": "Test", "url": "https://example.com", "content": "Snippet"},
 			},
@@ -316,7 +316,7 @@ func TestGetKnowledgeGraphHandler_Empty(t *testing.T) {
 
 func TestNewServer_RegistersTools(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{"results": []any{}})
+		_ = json.NewEncoder(w).Encode(map[string]any{"results": []any{}})
 	}))
 	defer srv.Close()
 
