@@ -7,34 +7,39 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/labstack/echo/v4"
-	"github.com/urmzd/adk/provider/ollama"
-	kg "github.com/urmzd/kgdk"
-	kgsurrealdb "github.com/urmzd/kgdk/surrealdb"
+	"github.com/jackc/pgx/v5"
+	mcpserver "github.com/mark3labs/mcp-go/server"
+	"github.com/urmzd/saige/agent/provider/ollama"
+	"github.com/urmzd/saige/knowledge"
+	"github.com/urmzd/saige/postgres"
 	"github.com/urmzd/zoro/internal/agent"
 	"github.com/urmzd/zoro/internal/config"
 	"github.com/urmzd/zoro/internal/events"
+	"github.com/urmzd/zoro/internal/mcp"
 	"github.com/urmzd/zoro/internal/orchestrator"
 	"github.com/urmzd/zoro/internal/searcher"
-	"github.com/urmzd/zoro/internal/server"
 	"github.com/urmzd/zoro/internal/subprocess"
 	"github.com/urmzd/zoro/internal/tools"
 )
 
-// Wire creates all dependencies and returns a configured Echo instance.
-// The returned cleanup function closes connections and stops subprocesses.
-func Wire(ctx context.Context, cfg *config.AppConfig) (*echo.Echo, func(), error) {
+// Wire creates all dependencies and returns a configured MCP server.
+func Wire(ctx context.Context, cfg *config.AppConfig) (*mcpserver.MCPServer, func(), error) {
 	var cleanups []func()
 
-	// SurrealDB: managed subprocess or external
-	surrealURL := cfg.SurrealDBURL
-	if surrealURL == "" {
-		proc, err := subprocess.StartSurreal(ctx, cfg.DataDir, 8765)
-		if err != nil {
-			return nil, nil, fmt.Errorf("start surrealdb: %w", err)
-		}
-		surrealURL = proc.URL()
-		cleanups = append(cleanups, func() { proc.Stop() })
+	// PostgreSQL
+	if err := ensureExtensions(ctx, cfg.PostgresURL); err != nil {
+		return nil, nil, fmt.Errorf("ensure extensions: %w", err)
+	}
+
+	pool, err := postgres.NewPool(ctx, postgres.Config{URL: cfg.PostgresURL})
+	if err != nil {
+		return nil, nil, fmt.Errorf("connect postgres: %w", err)
+	}
+	cleanups = append(cleanups, func() { pool.Close() })
+
+	if err := postgres.RunMigrations(ctx, pool, postgres.MigrationOptions{}); err != nil {
+		runCleanups(cleanups)
+		return nil, nil, fmt.Errorf("run migrations: %w", err)
 	}
 
 	// SearXNG: managed subprocess or external
@@ -58,36 +63,27 @@ func Wire(ctx context.Context, cfg *config.AppConfig) (*echo.Echo, func(), error
 		}
 	}
 
+	// Single Ollama client for both agent and knowledge graph
 	ollamaClient := ollama.NewClient(cfg.OllamaHost, cfg.OllamaModel, cfg.EmbeddingModel)
 	adapter := ollama.NewAdapter(ollamaClient)
 
-	embedder := kg.NewOllamaEmbedder(ollamaClient)
-	extractor := kg.NewOllamaExtractor(ollamaClient)
+	embedder := knowledge.NewOllamaEmbedder(ollamaClient)
+	extractor := knowledge.NewOllamaExtractor(ollamaClient)
 
-	store, err := kgsurrealdb.NewStore(ctx, kgsurrealdb.StoreConfig{
-		URL:       surrealURL,
-		Namespace: "zoro",
-		Database:  "zoro",
-		Username:  cfg.SurrealDBUser,
-		Password:  cfg.SurrealDBPass,
-	})
-	if err != nil {
-		runCleanups(cleanups)
-		return nil, nil, fmt.Errorf("connect surrealdb: %w", err)
-	}
-	cleanups = append(cleanups, func() { store.Close(ctx) })
-
-	graph, err := kg.NewGraph(ctx,
-		kg.WithStore(store),
-		kg.WithExtractor(extractor),
-		kg.WithEmbedder(embedder),
+	// Knowledge graph
+	graph, err := knowledge.NewGraph(ctx,
+		knowledge.WithPostgres(pool),
+		knowledge.WithExtractor(extractor),
+		knowledge.WithEmbedder(embedder),
 	)
 	if err != nil {
 		runCleanups(cleanups)
 		return nil, nil, err
 	}
+	cleanups = append(cleanups, func() { graph.Close(ctx) })
 
-	es := events.New(store.DB())
+	// Chat session store
+	es := events.New(pool)
 	if err := es.EnsureSchema(ctx); err != nil {
 		log.Printf("event schema warning: %v", err)
 	}
@@ -98,17 +94,16 @@ func Wire(ctx context.Context, cfg *config.AppConfig) (*echo.Echo, func(), error
 	searchKG := tools.NewSearchKnowledgeTool(graph)
 	storeKG := tools.NewStoreKnowledgeTool(graph)
 
-	ag := agent.New(adapter, webSearch, searchKG, storeKG, cfg.OllamaFastModel, es)
+	ag := agent.New(adapter, webSearch, searchKG, storeKG, es)
 	orch := orchestrator.New(graph, adapter, s)
 
-	srv := server.New(ag, orch, graph, adapter, cfg.OllamaHost, searxngURL)
-	e := srv.Setup()
+	srv := mcp.NewServer(ag, orch, graph, s)
 
 	cleanup := func() {
 		runCleanups(cleanups)
 	}
 
-	return e, cleanup, nil
+	return srv, cleanup, nil
 }
 
 func writeSearXNGSettings(dataDir string) (string, error) {
@@ -121,6 +116,21 @@ func writeSearXNGSettings(dataDir string) (string, error) {
 		return "", err
 	}
 	return p, nil
+}
+
+func ensureExtensions(ctx context.Context, dsn string) error {
+	conn, err := pgx.Connect(ctx, dsn)
+	if err != nil {
+		return fmt.Errorf("connect: %w", err)
+	}
+	defer conn.Close(ctx)
+
+	for _, ext := range []string{"vector", "pg_trgm"} {
+		if _, err := conn.Exec(ctx, "CREATE EXTENSION IF NOT EXISTS "+ext); err != nil {
+			return fmt.Errorf("create extension %s: %w", ext, err)
+		}
+	}
+	return nil
 }
 
 func runCleanups(fns []func()) {

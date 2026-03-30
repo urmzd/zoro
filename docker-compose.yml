@@ -1,14 +1,16 @@
 services:
-  surrealdb:
-    image: surrealdb/surrealdb:v3.0.4
-    user: root
-    command: start --user root --pass root surrealkv:/data/zoro.db
+  postgres:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_USER: zoro
+      POSTGRES_PASSWORD: zoro
+      POSTGRES_DB: zoro
     ports:
-      - "8000:8000"
+      - "5432:5432"
     volumes:
-      - zoro-data:/data
+      - zoro-pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD-SHELL", "pg_isready -U zoro"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -26,4 +28,4 @@ services:
       retries: 5
 
 volumes:
-  zoro-data:
+  zoro-pgdata:

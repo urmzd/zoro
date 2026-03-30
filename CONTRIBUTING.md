@@ -19,7 +19,7 @@ Thanks for your interest in contributing to Zoro. This guide covers how to set u
 git clone https://github.com/urmzd/zoro.git
 cd zoro
 
-# First-time setup: installs deps, starts Docker (SurrealDB + SearXNG), pulls LLM models
+# First-time setup: installs deps, starts Docker (PostgreSQL + SearXNG), pulls LLM models
 just setup
 
 # Start Go backend + Next.js frontend with hot reload
@@ -41,12 +41,12 @@ internal/
 ├── agent/         # Chat agent: SDK wiring, session management, SSE streaming
 ├── app/           # Dependency wiring (wire.go)
 ├── config/        # Environment configuration, embedded SearXNG settings
-├── events/        # SurrealDB event store for chat sessions
+├── events/        # PostgreSQL event store for chat sessions
 ├── models/        # Shared data structures
 ├── orchestrator/  # Research pipeline: search → ingest → summarize
 ├── searcher/      # SearXNG HTTP client
 ├── server/        # Echo HTTP handlers, SSE writer, middleware
-├── subprocess/    # Managed SurrealDB and SearXNG subprocesses (desktop mode)
+├── subprocess/    # Managed SearXNG subprocess (desktop mode)
 └── tools/         # Agent tools: web_search, search_knowledge, store_knowledge
 
 frontend/src/
@@ -61,8 +61,8 @@ cmd/desktop/       # Wails desktop app entry point
 ### Key Dependencies
 
 - **adk** (`github.com/urmzd/adk`): Agent SDK — typed deltas, provider interface, tool registry
-- **kgdk** (`github.com/urmzd/kgdk`): Knowledge graph SDK — SurrealDB store, extraction, embeddings
-- **SurrealDB**: Graph + document database (Docker in web mode, managed subprocess in desktop mode)
+- **saige** (`github.com/urmzd/saige`): Knowledge graph — PostgreSQL store (pgvector), extraction, embeddings
+- **PostgreSQL**: Relational database with pgvector extension (Docker)
 - **SearXNG**: Metasearch engine (Docker in web mode, managed subprocess in desktop mode)
 - **Ollama**: Local LLM provider
 
@@ -115,7 +115,7 @@ Use conventional commit prefixes:
 
 ## Desktop Mode
 
-Zoro can run as a standalone desktop app via [Wails](https://wails.io/). In desktop mode, SurrealDB and SearXNG are managed as subprocesses (no Docker required).
+Zoro can run as a standalone desktop app via [Wails](https://wails.io/). In desktop mode, SearXNG is managed as a subprocess. PostgreSQL (Docker) must be running.
 
 ```bash
 just build-desktop    # Build the desktop binary

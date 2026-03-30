@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"time"
 )
 
@@ -126,4 +128,25 @@ func ensureSearXNGVenv(venvDir string) error {
 
 	log.Println("[searxng] installed")
 	return nil
+}
+
+func waitForHealth(url string, timeout time.Duration) error {
+	deadline := time.Now().Add(timeout)
+	client := &http.Client{Timeout: 2 * time.Second}
+	attempt := 0
+	for time.Now().Before(deadline) {
+		attempt++
+		resp, err := client.Get(url)
+		if err == nil {
+			resp.Body.Close()
+			if resp.StatusCode == http.StatusOK {
+				return nil
+			}
+		}
+		if attempt%10 == 0 {
+			log.Printf("[health] waiting (attempt %d, url: %s)...", attempt, url)
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
+	return fmt.Errorf("timeout after %s (%d attempts, url: %s)", timeout, attempt, strconv.Quote(url))
 }

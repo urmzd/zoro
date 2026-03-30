@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	mcpserver "github.com/mark3labs/mcp-go/server"
 	"github.com/urmzd/zoro/internal/app"
 	"github.com/urmzd/zoro/internal/config"
 )
@@ -17,15 +18,11 @@ func main() {
 
 	cfg := config.Load()
 
-	// Web mode defaults: expect external SurrealDB and SearXNG (Docker)
-	if cfg.SurrealDBURL == "" {
-		cfg.SurrealDBURL = "ws://localhost:8000"
-	}
 	if cfg.SearXNGURL == "" {
 		cfg.SearXNGURL = "http://127.0.0.1:8888"
 	}
 
-	e, cleanup, err := app.Wire(ctx, cfg)
+	srv, cleanup, err := app.Wire(ctx, cfg)
 	if err != nil {
 		log.Fatalf("failed to wire app: %v", err)
 	}
@@ -37,12 +34,11 @@ func main() {
 		<-sigCh
 		log.Println("shutting down...")
 		cancel()
-		e.Close()
+		os.Exit(0)
 	}()
 
-	addr := ":" + cfg.Port
-	log.Printf("Zoro backend starting on %s", addr)
-	if err := e.Start(addr); err != nil {
-		log.Printf("server stopped: %v", err)
+	log.Println("Zoro MCP server starting on stdio")
+	if err := mcpserver.ServeStdio(srv); err != nil {
+		log.Fatalf("mcp server error: %v", err)
 	}
 }

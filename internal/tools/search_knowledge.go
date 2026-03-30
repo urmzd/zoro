@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/urmzd/adk/core"
-	"github.com/urmzd/kgdk/kgtypes"
+	"github.com/urmzd/saige/agent/types"
+	kgtypes "github.com/urmzd/saige/knowledge/types"
 )
 
-// SearchKnowledgeTool implements core.Tool for knowledge graph search.
+// SearchKnowledgeTool implements types.Tool for knowledge graph search.
 type SearchKnowledgeTool struct {
 	graph   kgtypes.Graph
 	groupID string
@@ -23,14 +23,14 @@ func (t *SearchKnowledgeTool) WithGroupID(id string) *SearchKnowledgeTool {
 	return &SearchKnowledgeTool{graph: t.graph, groupID: id}
 }
 
-func (t *SearchKnowledgeTool) Definition() core.ToolDef {
-	return core.ToolDef{
+func (t *SearchKnowledgeTool) Definition() types.ToolDef {
+	return types.ToolDef{
 		Name:        "search_knowledge",
 		Description: "Search the knowledge graph for previously stored facts and entities. Returns up to 10 relevant facts.",
-		Parameters: core.ParameterSchema{
+		Parameters: types.ParameterSchema{
 			Type:     "object",
 			Required: []string{"query"},
-			Properties: map[string]core.PropertyDef{
+			Properties: map[string]types.PropertyDef{
 				"query": {Type: "string", Description: "The search query for knowledge retrieval"},
 			},
 		},

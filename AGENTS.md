@@ -2,27 +2,27 @@
 
 ## Project Overview
 
-Zoro is a privacy-first research agent that builds a personal knowledge graph locally. It searches the web via SearXNG, extracts entities and relationships using local LLMs (Ollama), and stores everything in SurrealDB. All data stays on the user's machine.
+Zoro is a privacy-first research agent that builds a personal knowledge graph locally. It searches the web via SearXNG, extracts entities and relationships using local LLMs (Ollama), and stores everything in PostgreSQL with pgvector. All data stays on the user's machine.
 
-**Stack**: Go 1.25 + Echo v4 backend, Next.js 16 + React 19 frontend, Wails v2 desktop shell, SurrealDB, SearXNG, Ollama.
+**Stack**: Go 1.25 + Echo v4 backend, Next.js 16 + React 19 frontend, Wails v2 desktop shell, PostgreSQL (pgvector), SearXNG, Ollama.
 
 ## Architecture
 
 Zoro has two run modes:
 
 ```
-Desktop mode (Wails — no Docker needed)
+Desktop mode (Wails — requires Docker for PostgreSQL)
   ├── Wails WebView renders embedded static Next.js export
   ├── Echo v4 serves API via Wails AssetServer (no network port)
-  ├── internal/subprocess/ manages SurrealDB + SearXNG lifecycles
-  │   ├── SurrealDB: auto-downloaded binary (port 8765)
+  ├── internal/subprocess/ manages SearXNG lifecycle
   │   └── SearXNG: pip-installed Python venv (port 8888)
+  ├── PostgreSQL with pgvector (Docker, port 5432)
   └── Ollama (external, must be running)
 
 Web mode (development — uses Docker)
   ├── Next.js dev server (port 3000) proxies /api/* → Go backend
   ├── Echo v4 backend (port 8080)
-  ├── SurrealDB via Docker (port 8000)
+  ├── PostgreSQL with pgvector via Docker (port 5432)
   ├── SearXNG via Docker (port 8888)
   └── Ollama (external)
 ```
@@ -32,7 +32,7 @@ Web mode (development — uses Docker)
 ```bash
 # Desktop app
 just build-desktop   # Build native binary (embeds frontend)
-./zoro-desktop       # First run downloads SurrealDB + installs SearXNG
+./zoro-desktop       # First run installs SearXNG; PostgreSQL must be running
 
 # Web development
 just setup           # Install deps, start Docker, pull Ollama models
@@ -68,21 +68,15 @@ All optional; defaults work for local development.
 | `OLLAMA_MODEL` | `qwen3.5:4b` | Main LLM model |
 | `OLLAMA_FAST_MODEL` | `qwen3.5:0.8b` | Fast model (autocomplete/intent) |
 | `EMBEDDING_MODEL` | `nomic-embed-text` | Embedding model |
-| `SURREALDB_URL` | (empty = managed subprocess) | Set to use external SurrealDB |
+| `POSTGRES_URL` | `postgres://zoro:zoro@localhost:5432/zoro?sslmode=disable` | PostgreSQL connection URL |
 | `SEARXNG_URL` | (empty = managed subprocess) | Set to use external SearXNG |
 | `ZORO_DATA_DIR` | `~/.config/zoro` | App data dir (binaries, DB, venv, logs) |
 
-In web mode (`main.go`), empty `SURREALDB_URL`/`SEARXNG_URL` default to Docker URLs (`ws://localhost:8000`, `http://127.0.0.1:8888`). In desktop mode (`cmd/desktop/main.go`), empty values trigger subprocess management.
+In web mode (`main.go`), empty `SEARXNG_URL` defaults to `http://127.0.0.1:8888` (Docker). In desktop mode (`cmd/desktop/main.go`), empty `SEARXNG_URL` triggers subprocess management. PostgreSQL must always be running (Docker).
 
 ## Subprocess Management
 
-`internal/subprocess/` manages SurrealDB and SearXNG as child processes for the desktop app:
-
-### SurrealDB (`surrealdb.go`)
-- Downloads official binary from `download.surrealdb.com` on first run
-- Stored at `$ZORO_DATA_DIR/bin/surreal`
-- Data persists at `$ZORO_DATA_DIR/data/zoro.db` (surrealkv backend)
-- Runs on port 8765, health-checked via `/health`
+`internal/subprocess/` manages SearXNG as a child process for the desktop app:
 
 ### SearXNG (`searxng.go`)
 - Creates a Python venv at `$ZORO_DATA_DIR/searxng-venv/`
@@ -133,8 +127,8 @@ Releases use semantic versioning via `.github/workflows/release.yml`.
 - Tools implement the `adk.Tool` interface: `Definition()` + `Execute()`
 - HTTP handlers in `internal/server/handlers_*.go`, grouped by domain
 - SSE streaming via `internal/server/sse.go`
-- SurrealDB queries use `surrealdb.Query[T]()` returning `*[]QueryResult[T]`
-- No ORM; raw SurrealQL in `internal/events/store.go`
+- PostgreSQL queries use `pgx` via `pgxpool`
+- No ORM; raw SQL in `internal/events/store.go`
 - Searcher accepts a base URL: `searcher.New(baseURL string)`
 
 ### Frontend
@@ -153,7 +147,7 @@ Releases use semantic versioning via `.github/workflows/release.yml`.
 
 ### Naming
 
-- **Go**: PascalCase types, camelCase locals, snake_case in SurrealQL
+- **Go**: PascalCase types, camelCase locals, snake_case in SQL
 - **Frontend**: PascalCase components, camelCase functions/variables
 - **API routes**: kebab-case (`/api/sessions`, `/api/knowledge/search`)
 - **Commits**: conventional commits (feat, fix, chore, etc.) — enforced by semantic release
@@ -173,15 +167,15 @@ Releases use semantic versioning via `.github/workflows/release.yml`.
 | GET | `/api/knowledge/nodes/{id}` | Get node with neighbors |
 | POST | `/api/intent/classify` | Classify query intent |
 | GET | `/api/autocomplete` | Autocomplete suggestions |
-| GET | `/api/status` | Service readiness (surrealdb, searxng, ollama) |
+| GET | `/api/status` | Service readiness (postgres, searxng, ollama) |
 | GET | `/api/logs?lines=100` | App log tail |
 
 ## Key Dependencies
 
 - **`github.com/urmzd/adk`**: Agent development kit — agent loop, provider interface, tool registry, Ollama adapter, SSE streaming
-- **`github.com/urmzd/kgdk`**: Knowledge graph development kit — graph interface, SurrealDB store, entity extraction, embeddings
+- **`github.com/urmzd/saige`**: Knowledge graph, PostgreSQL store (pgvector), entity extraction, embeddings
 - **`github.com/wailsapp/wails/v2`**: Native desktop shell — WebView, asset server, macOS/Windows/Linux
-- Both SDKs may use local `replace` directives in `go.mod` during development
+- SDKs may use local `replace` directives in `go.mod` during development
 
 ## Troubleshooting
 
@@ -190,7 +184,6 @@ Releases use semantic versioning via `.github/workflows/release.yml`.
 - Port conflicts on 8080: check for leftover `zoro` processes with `lsof -i :8080`.
 - SearXNG warning about `limiter.toml` is non-critical and can be ignored.
 - SearXNG first install takes ~30s (pip install from GitHub). Subsequent launches reuse the cached venv (~1s).
-- SurrealDB binary is ~25MB, downloaded once on first desktop launch.
 - Desktop app logs: `cat "$(python3 -c 'import os; print(os.path.join(os.path.expanduser("~"), "Library", "Application Support", "zoro", "zoro.log"))')"`
 - macOS linker errors with Wails: ensure `CGO_LDFLAGS="-framework UniformTypeIdentifiers"` is set (handled by justfile).
 - If SearXNG pip install fails, delete `$ZORO_DATA_DIR/searxng-venv/` and relaunch.
