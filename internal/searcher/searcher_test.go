@@ -27,7 +27,7 @@ func TestSearch_Success(t *testing.T) {
 				{Title: "Result 3", URL: "https://example.com/3", Content: "Snippet 3"},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer srv.Close()
 
@@ -56,7 +56,7 @@ func TestSearch_DeduplicatesURLs(t *testing.T) {
 				{Title: "Different", URL: "https://example.com/other", Content: "C"},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer srv.Close()
 
@@ -78,7 +78,7 @@ func TestSearch_SkipsEmptyURLs(t *testing.T) {
 				{Title: "Has URL", URL: "https://example.com", Content: "B"},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer srv.Close()
 
@@ -102,7 +102,7 @@ func TestSearch_LimitsTo8Results(t *testing.T) {
 				Content: "Content",
 			})
 		}
-		json.NewEncoder(w).Encode(searxngResponse{Results: results})
+		_ = json.NewEncoder(w).Encode(searxngResponse{Results: results})
 	}))
 	defer srv.Close()
 
@@ -131,7 +131,7 @@ func TestSearch_HTTPError(t *testing.T) {
 
 func TestSearch_InvalidJSON(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("not json"))
+		_, _ = w.Write([]byte("not json"))
 	}))
 	defer srv.Close()
 
@@ -144,7 +144,7 @@ func TestSearch_InvalidJSON(t *testing.T) {
 
 func TestSearch_ContextCancelled(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(searxngResponse{})
+		_ = json.NewEncoder(w).Encode(searxngResponse{})
 	}))
 	defer srv.Close()
 
