@@ -69,8 +69,12 @@ tidy:
 check:
     go vet ./...
 
+# Run tests
+test:
+    go test -race -count=1 ./...
+
 # Full CI gate
-ci: check build
+ci: check test build
 
 # ── Utilities ────────────────────────────────────────────────────────
 
