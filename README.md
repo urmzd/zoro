@@ -4,6 +4,10 @@ Privacy-first research agent that builds a personal knowledge graph on your mach
 
 Zoro runs as an [MCP](https://modelcontextprotocol.io/) server over stdio, designed for use with Claude Code and other MCP clients.
 
+### Why no frontend?
+
+Zoro has no web UI or desktop app. The MCP client **is** the interface — Claude Code, Cursor, or any MCP-compatible tool renders the conversation and results. This avoids duplicating UI that the client already provides, keeps the codebase focused on the research engine, and means Zoro works anywhere MCP does without shipping its own frontend.
+
 ## Architecture
 
 ```
