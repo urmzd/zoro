@@ -7,7 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	mcpserver "github.com/mark3labs/mcp-go/server"
+	gomcp "github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/urmzd/zoro/internal/app"
 	"github.com/urmzd/zoro/internal/config"
 )
@@ -37,5 +37,5 @@ func runServe() error {
 	}()
 
 	log.Println("Zoro MCP server starting on stdio")
-	return mcpserver.ServeStdio(srv)
+	return srv.Run(ctx, &gomcp.StdioTransport{})
 }

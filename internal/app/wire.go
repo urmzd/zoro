@@ -9,7 +9,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	mcpserver "github.com/mark3labs/mcp-go/server"
+	gomcp "github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/urmzd/saige/agent/provider/ollama"
 	"github.com/urmzd/saige/knowledge"
 	kgtypes "github.com/urmzd/saige/knowledge/types"
@@ -26,7 +26,7 @@ import (
 
 // Components holds all wired dependencies.
 type Components struct {
-	MCP          *mcpserver.MCPServer
+	MCP          *gomcp.Server
 	Agent        *agent.Agent
 	Orchestrator *orchestrator.Orchestrator
 	Searcher     *searcher.Searcher
@@ -180,7 +180,7 @@ func WireComponents(ctx context.Context, cfg *config.AppConfig, opts WireOpts) (
 }
 
 // Wire creates all dependencies and returns a configured MCP server.
-func Wire(ctx context.Context, cfg *config.AppConfig) (*mcpserver.MCPServer, func(), error) {
+func Wire(ctx context.Context, cfg *config.AppConfig) (*gomcp.Server, func(), error) {
 	c, err := WireComponents(ctx, cfg, WireAll())
 	if err != nil {
 		return nil, nil, err
