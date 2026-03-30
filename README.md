@@ -6,7 +6,7 @@ Zoro runs as an [MCP](https://modelcontextprotocol.io/) server over stdio, desig
 
 ### Why no frontend?
 
-Zoro has no web UI or desktop app. The MCP client **is** the interface — Claude Code, Cursor, or any MCP-compatible tool renders the conversation and results. This avoids duplicating UI that the client already provides, keeps the codebase focused on the research engine, and means Zoro works anywhere MCP does without shipping its own frontend.
+Zoro is a personal research engine — it's yours and yours only. By exposing capabilities through MCP instead of a bundled UI, you use Zoro from whatever interface you already work in: Claude Code, Cursor, Windsurf, or any other MCP client. Your knowledge graph follows you across tools rather than being locked behind a single app. Zoro stays focused on the research engine; the interface is your choice.
 
 ## Architecture
 
