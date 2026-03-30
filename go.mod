@@ -9,8 +9,6 @@ require (
 	github.com/urmzd/saige v0.6.1
 )
 
-replace github.com/urmzd/saige => ../saige/
-
 require (
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
 	github.com/buger/jsonparser v1.1.1 // indirect
