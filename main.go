@@ -1,44 +1,55 @@
 package main
 
 import (
-	"context"
-	"log"
+	"fmt"
 	"os"
-	"os/signal"
-	"syscall"
-
-	mcpserver "github.com/mark3labs/mcp-go/server"
-	"github.com/urmzd/zoro/internal/app"
-	"github.com/urmzd/zoro/internal/config"
 )
 
+var version = "dev"
+
 func main() {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	cfg := config.Load()
-
-	if cfg.SearXNGURL == "" {
-		cfg.SearXNGURL = "http://127.0.0.1:8888"
+	cmd := "serve"
+	args := os.Args[1:]
+	if len(args) > 0 {
+		cmd = args[0]
+		args = args[1:]
 	}
 
-	srv, cleanup, err := app.Wire(ctx, cfg)
+	var err error
+	switch cmd {
+	case "serve":
+		err = runServe()
+	case "chat":
+		err = runChat(args)
+	case "research":
+		err = runResearch(args)
+	case "search":
+		err = runSearch(args)
+	case "version":
+		runVersion()
+	case "help", "-h", "--help":
+		printUsage()
+	default:
+		fmt.Fprintf(os.Stderr, "unknown command: %s\n\n", cmd)
+		printUsage()
+		os.Exit(1)
+	}
+
 	if err != nil {
-		log.Fatalf("failed to wire app: %v", err)
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
 	}
-	defer cleanup()
+}
 
-	go func() {
-		sigCh := make(chan os.Signal, 1)
-		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
-		<-sigCh
-		log.Println("shutting down...")
-		cancel()
-		os.Exit(0)
-	}()
+func printUsage() {
+	fmt.Fprintf(os.Stderr, `Usage: zoro <command> [flags]
 
-	log.Println("Zoro MCP server starting on stdio")
-	if err := mcpserver.ServeStdio(srv); err != nil {
-		log.Fatalf("mcp server error: %v", err)
-	}
+Commands:
+  serve       Start MCP server on stdio (default)
+  chat        Chat with Zoro
+  research    Run deep research pipeline
+  search      Search the web
+  version     Print version
+  help        Show this help
+`)
 }
