@@ -10,6 +10,7 @@ import (
 	"github.com/mark3labs/mcp-go/server"
 	kgtypes "github.com/urmzd/saige/knowledge/types"
 	"github.com/urmzd/zoro/internal/agent"
+	"github.com/urmzd/zoro/internal/graph"
 	"github.com/urmzd/zoro/internal/orchestrator"
 	"github.com/urmzd/zoro/internal/searcher"
 )
@@ -54,6 +55,16 @@ func NewServer(ag *agent.Agent, orch *orchestrator.Orchestrator, graph kgtypes.G
 				mcp.WithString("source", mcp.Required(), mcp.Description("Description of the source of this information")),
 			),
 			Handler: storeKnowledgeHandler(graph),
+		},
+		server.ServerTool{
+			Tool: mcp.NewTool("get_knowledge_graph",
+				mcp.WithDescription("Get the knowledge graph structure: all entities (nodes) and their relationships (edges). Returns a structured view of all stored knowledge that shows how concepts are connected. Use format=dot to get Graphviz DOT output for SVG rendering."),
+				mcp.WithString("format", mcp.Description("Output format: text (default, human/AI-readable), dot (Graphviz DOT for SVG), json (structured data)")),
+				mcp.WithNumber("limit", mcp.Description("Max number of edges to return (default 100)")),
+				mcp.WithString("node_id", mcp.Description("Optional: entity UUID to show only its neighborhood")),
+				mcp.WithNumber("depth", mcp.Description("Traversal depth when using node_id (default 2)")),
+			),
+			Handler: getKnowledgeGraphHandler(graph),
 		},
 	)
 
@@ -140,6 +151,64 @@ func searchKnowledgeHandler(graph kgtypes.Graph) server.ToolHandlerFunc {
 			return mcp.NewToolResultText("No relevant knowledge found."), nil
 		}
 		return mcp.NewToolResultText(b.String()), nil
+	}
+}
+
+func getKnowledgeGraphHandler(g kgtypes.Graph) server.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		format, _ := args["format"].(string)
+		if format == "" {
+			format = "text"
+		}
+
+		limit := int64(100)
+		if l, ok := args["limit"].(float64); ok && l > 0 {
+			limit = int64(l)
+		}
+
+		depth := 2
+		if d, ok := args["depth"].(float64); ok && d > 0 {
+			depth = int(d)
+		}
+
+		var data *kgtypes.GraphData
+
+		if nodeID, _ := args["node_id"].(string); nodeID != "" {
+			detail, err := g.GetNode(ctx, nodeID, depth)
+			if err != nil {
+				return mcp.NewToolResultError(err.Error()), nil
+			}
+			nodes := make([]kgtypes.GraphNode, 0, 1+len(detail.Neighbors))
+			nodes = append(nodes, detail.Node)
+			nodes = append(nodes, detail.Neighbors...)
+			data = &kgtypes.GraphData{Nodes: nodes, Edges: detail.Edges}
+		} else {
+			var err error
+			data, err = g.GetGraph(ctx, limit)
+			if err != nil {
+				return mcp.NewToolResultError(err.Error()), nil
+			}
+		}
+
+		var output string
+		switch format {
+		case "dot":
+			output = graph.ToDOT(data)
+		case "json":
+			out, err := json.MarshalIndent(data, "", "  ")
+			if err != nil {
+				return mcp.NewToolResultError(err.Error()), nil
+			}
+			output = string(out)
+		default:
+			output = graph.ToText(data)
+		}
+
+		if output == "" {
+			return mcp.NewToolResultText("Knowledge graph is empty."), nil
+		}
+		return mcp.NewToolResultText(output), nil
 	}
 }
 
