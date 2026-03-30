@@ -4,13 +4,13 @@ set -euo pipefail
 echo "=== Zoro Setup ==="
 
 # Check prerequisites
-for cmd in rustc cargo node ollama; do
+for cmd in go ollama docker; do
     if ! command -v "$cmd" &> /dev/null; then
         echo "ERROR: $cmd not found."
         case "$cmd" in
-            rustc|cargo) echo "  Install Rust: https://rustup.rs" ;;
-            node)        echo "  Install Node.js 24+: https://nodejs.org" ;;
-            ollama)      echo "  Install Ollama: https://ollama.ai" ;;
+            go)      echo "  Install Go: https://go.dev/dl/" ;;
+            ollama)  echo "  Install Ollama: https://ollama.ai" ;;
+            docker)  echo "  Install Docker: https://docs.docker.com/get-docker/" ;;
         esac
         exit 1
     fi
@@ -18,7 +18,7 @@ done
 
 if ! command -v just &> /dev/null; then
     echo "Installing just..."
-    command -v brew &> /dev/null && brew install just || cargo install just
+    command -v brew &> /dev/null && brew install just || go install github.com/casey/just@latest
 fi
 
 just setup
