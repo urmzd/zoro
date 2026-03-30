@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.7.1 (2026-03-30)
+
+### Documentation
+
+- add agent skill following agentskills.io spec ([63296a9](https://github.com/urmzd/zoro/commit/63296a9e905c32381709a35e22d036cc708ca99b))
+
+### Refactoring
+
+- replace HTTP/frontend with MCP server, add CLI and knowledge graph (#4) ([8b41394](https://github.com/urmzd/zoro/commit/8b41394ab3d6ffe8a2c9f795a5bfcf8a3c893c94))
+
+### Miscellaneous
+
+- standardize CI/CD — add sr.yaml, CI gate release, fix triggers, justfile recipes ([ecf050e](https://github.com/urmzd/zoro/commit/ecf050eecd5676df23fbf509dcb40caa7b3d5be0))
+- use sr-releaser GitHub App for release workflow (#1) ([89a4c26](https://github.com/urmzd/zoro/commit/89a4c264b9eaa7a9e7dcfba94020cbbb64587b46))
+- update semantic-release action to sr@v2 ([245af15](https://github.com/urmzd/zoro/commit/245af15a4d621a7413122073bcd64b596be69730))
+
+[Full Changelog](https://github.com/urmzd/zoro/compare/v0.7.0...v0.7.1)
+
+
 ## 0.4.0 (2026-03-07)
 
 ### Features
