@@ -8,9 +8,11 @@ import (
 	"path/filepath"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	mcpserver "github.com/mark3labs/mcp-go/server"
 	"github.com/urmzd/saige/agent/provider/ollama"
 	"github.com/urmzd/saige/knowledge"
+	kgtypes "github.com/urmzd/saige/knowledge/types"
 	"github.com/urmzd/saige/postgres"
 	"github.com/urmzd/zoro/internal/agent"
 	"github.com/urmzd/zoro/internal/config"
@@ -22,88 +24,155 @@ import (
 	"github.com/urmzd/zoro/internal/tools"
 )
 
-// Wire creates all dependencies and returns a configured MCP server.
-func Wire(ctx context.Context, cfg *config.AppConfig) (*mcpserver.MCPServer, func(), error) {
+// Components holds all wired dependencies.
+type Components struct {
+	MCP          *mcpserver.MCPServer
+	Agent        *agent.Agent
+	Orchestrator *orchestrator.Orchestrator
+	Searcher     *searcher.Searcher
+	Cleanup      func()
+}
+
+// WireOpts controls which subsystems to initialize.
+type WireOpts struct {
+	NeedAgent        bool
+	NeedOrchestrator bool
+	NeedSearcher     bool
+	NeedMCP          bool
+}
+
+// WireAll returns opts that initialize everything.
+func WireAll() WireOpts {
+	return WireOpts{
+		NeedAgent:        true,
+		NeedOrchestrator: true,
+		NeedSearcher:     true,
+		NeedMCP:          true,
+	}
+}
+
+// WireComponents creates dependencies based on the requested opts.
+func WireComponents(ctx context.Context, cfg *config.AppConfig, opts WireOpts) (*Components, error) {
 	var cleanups []func()
+	c := &Components{}
 
-	// PostgreSQL
-	if err := ensureExtensions(ctx, cfg.PostgresURL); err != nil {
-		return nil, nil, fmt.Errorf("ensure extensions: %w", err)
-	}
+	needDB := opts.NeedAgent || opts.NeedOrchestrator || opts.NeedMCP
+	needOllama := opts.NeedAgent || opts.NeedOrchestrator || opts.NeedMCP
+	needSearcher := opts.NeedSearcher || opts.NeedOrchestrator || opts.NeedAgent || opts.NeedMCP
 
-	pool, err := postgres.NewPool(ctx, postgres.Config{URL: cfg.PostgresURL})
-	if err != nil {
-		return nil, nil, fmt.Errorf("connect postgres: %w", err)
-	}
-	cleanups = append(cleanups, func() { pool.Close() })
-
-	if err := postgres.RunMigrations(ctx, pool, postgres.MigrationOptions{}); err != nil {
-		runCleanups(cleanups)
-		return nil, nil, fmt.Errorf("run migrations: %w", err)
-	}
-
-	// SearXNG: managed subprocess or external
-	searxngURL := cfg.SearXNGURL
-	if searxngURL == "" {
-		settingsPath, err := writeSearXNGSettings(cfg.DataDir)
-		if err != nil {
-			log.Printf("warning: failed to write searxng settings: %v", err)
-		} else {
-			proc, err := subprocess.StartSearXNG(ctx, cfg.DataDir, 8888, settingsPath)
+	// SearXNG
+	var s *searcher.Searcher
+	if needSearcher {
+		searxngURL := cfg.SearXNGURL
+		if searxngURL == "" {
+			settingsPath, err := writeSearXNGSettings(cfg.DataDir)
 			if err != nil {
-				log.Printf("warning: failed to start searxng: %v (web search will be unavailable)", err)
-				searxngURL = "http://127.0.0.1:8888"
+				log.Printf("warning: failed to write searxng settings: %v", err)
 			} else {
-				searxngURL = proc.URL()
-				cleanups = append(cleanups, func() { proc.Stop() })
+				proc, err := subprocess.StartSearXNG(ctx, cfg.DataDir, 8888, settingsPath)
+				if err != nil {
+					log.Printf("warning: failed to start searxng: %v (web search will be unavailable)", err)
+					searxngURL = "http://127.0.0.1:8888"
+				} else {
+					searxngURL = proc.URL()
+					cleanups = append(cleanups, func() { proc.Stop() })
+				}
+			}
+			if searxngURL == "" {
+				searxngURL = "http://127.0.0.1:8888"
 			}
 		}
-		if searxngURL == "" {
-			searxngURL = "http://127.0.0.1:8888"
+		s = searcher.New(searxngURL)
+		c.Searcher = s
+	}
+
+	// PostgreSQL
+	var pool *pgxpool.Pool
+	if needDB {
+		if err := ensureExtensions(ctx, cfg.PostgresURL); err != nil {
+			runCleanups(cleanups)
+			return nil, fmt.Errorf("ensure extensions: %w", err)
+		}
+
+		var err error
+		pool, err = postgres.NewPool(ctx, postgres.Config{URL: cfg.PostgresURL})
+		if err != nil {
+			runCleanups(cleanups)
+			return nil, fmt.Errorf("connect postgres: %w", err)
+		}
+		cleanups = append(cleanups, func() { pool.Close() })
+
+		if err := postgres.RunMigrations(ctx, pool, postgres.MigrationOptions{}); err != nil {
+			runCleanups(cleanups)
+			return nil, fmt.Errorf("run migrations: %w", err)
 		}
 	}
 
-	// Single Ollama client for both agent and knowledge graph
-	ollamaClient := ollama.NewClient(cfg.OllamaHost, cfg.OllamaModel, cfg.EmbeddingModel)
-	adapter := ollama.NewAdapter(ollamaClient)
-
-	embedder := knowledge.NewOllamaEmbedder(ollamaClient)
-	extractor := knowledge.NewOllamaExtractor(ollamaClient)
+	// Ollama
+	var ollamaClient *ollama.Client
+	var adapter *ollama.Adapter
+	if needOllama {
+		ollamaClient = ollama.NewClient(cfg.OllamaHost, cfg.OllamaModel, cfg.EmbeddingModel)
+		adapter = ollama.NewAdapter(ollamaClient)
+	}
 
 	// Knowledge graph
-	graph, err := knowledge.NewGraph(ctx,
-		knowledge.WithPostgres(pool),
-		knowledge.WithExtractor(extractor),
-		knowledge.WithEmbedder(embedder),
-	)
+	var graph kgtypes.Graph
+	if needDB && needOllama {
+		embedder := knowledge.NewOllamaEmbedder(ollamaClient)
+		extractor := knowledge.NewOllamaExtractor(ollamaClient)
+
+		g, err := knowledge.NewGraph(ctx,
+			knowledge.WithPostgres(pool),
+			knowledge.WithExtractor(extractor),
+			knowledge.WithEmbedder(embedder),
+		)
+		if err != nil {
+			runCleanups(cleanups)
+			return nil, err
+		}
+		graph = g
+		cleanups = append(cleanups, func() { graph.Close(ctx) })
+	}
+
+	// Event store
+	var es *events.Store
+	if needDB {
+		es = events.New(pool)
+		if err := es.EnsureSchema(ctx); err != nil {
+			log.Printf("event schema warning: %v", err)
+		}
+	}
+
+	// Agent
+	if opts.NeedAgent || opts.NeedMCP {
+		webSearch := tools.NewWebSearchTool(s, graph)
+		searchKG := tools.NewSearchKnowledgeTool(graph)
+		storeKG := tools.NewStoreKnowledgeTool(graph)
+		c.Agent = agent.New(adapter, webSearch, searchKG, storeKG, es)
+	}
+
+	// Orchestrator
+	if opts.NeedOrchestrator || opts.NeedMCP {
+		c.Orchestrator = orchestrator.New(graph, adapter, s)
+	}
+
+	// MCP server
+	if opts.NeedMCP {
+		c.MCP = mcp.NewServer(c.Agent, c.Orchestrator, graph, s)
+	}
+
+	c.Cleanup = func() { runCleanups(cleanups) }
+	return c, nil
+}
+
+// Wire creates all dependencies and returns a configured MCP server.
+func Wire(ctx context.Context, cfg *config.AppConfig) (*mcpserver.MCPServer, func(), error) {
+	c, err := WireComponents(ctx, cfg, WireAll())
 	if err != nil {
-		runCleanups(cleanups)
 		return nil, nil, err
 	}
-	cleanups = append(cleanups, func() { graph.Close(ctx) })
-
-	// Chat session store
-	es := events.New(pool)
-	if err := es.EnsureSchema(ctx); err != nil {
-		log.Printf("event schema warning: %v", err)
-	}
-
-	s := searcher.New(searxngURL)
-
-	webSearch := tools.NewWebSearchTool(s, graph)
-	searchKG := tools.NewSearchKnowledgeTool(graph)
-	storeKG := tools.NewStoreKnowledgeTool(graph)
-
-	ag := agent.New(adapter, webSearch, searchKG, storeKG, es)
-	orch := orchestrator.New(graph, adapter, s)
-
-	srv := mcp.NewServer(ag, orch, graph, s)
-
-	cleanup := func() {
-		runCleanups(cleanups)
-	}
-
-	return srv, cleanup, nil
+	return c.MCP, c.Cleanup, nil
 }
 
 func writeSearXNGSettings(dataDir string) (string, error) {
