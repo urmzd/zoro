@@ -77,7 +77,7 @@ func WireComponents(ctx context.Context, cfg *config.AppConfig, opts WireOpts) (
 					searxngURL = "http://127.0.0.1:8888"
 				} else {
 					searxngURL = proc.URL()
-					cleanups = append(cleanups, func() { proc.Stop() })
+					cleanups = append(cleanups, func() { _ = proc.Stop() })
 				}
 			}
 			if searxngURL == "" {
@@ -134,7 +134,7 @@ func WireComponents(ctx context.Context, cfg *config.AppConfig, opts WireOpts) (
 			return nil, err
 		}
 		graph = g
-		cleanups = append(cleanups, func() { graph.Close(ctx) })
+		cleanups = append(cleanups, func() { _ = graph.Close(ctx) })
 	} else if needDB && opts.NeedGraph {
 		// Read-only graph: no embedder/extractor needed.
 		g, err := knowledge.NewGraph(ctx, knowledge.WithPostgres(pool))
@@ -143,7 +143,7 @@ func WireComponents(ctx context.Context, cfg *config.AppConfig, opts WireOpts) (
 			return nil, err
 		}
 		graph = g
-		cleanups = append(cleanups, func() { graph.Close(ctx) })
+		cleanups = append(cleanups, func() { _ = graph.Close(ctx) })
 	}
 	c.Graph = graph
 
@@ -205,7 +205,7 @@ func ensureExtensions(ctx context.Context, dsn string) error {
 	if err != nil {
 		return fmt.Errorf("connect: %w", err)
 	}
-	defer conn.Close(ctx)
+	defer func() { _ = conn.Close(ctx) }()
 
 	for _, ext := range []string{"vector", "pg_trgm"} {
 		if _, err := conn.Exec(ctx, "CREATE EXTENSION IF NOT EXISTS "+ext); err != nil {
