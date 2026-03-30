@@ -30,6 +30,7 @@ type Components struct {
 	Agent        *agent.Agent
 	Orchestrator *orchestrator.Orchestrator
 	Searcher     *searcher.Searcher
+	Graph        kgtypes.Graph
 	Cleanup      func()
 }
 
@@ -39,6 +40,7 @@ type WireOpts struct {
 	NeedOrchestrator bool
 	NeedSearcher     bool
 	NeedMCP          bool
+	NeedGraph        bool
 }
 
 // WireAll returns opts that initialize everything.
@@ -56,7 +58,7 @@ func WireComponents(ctx context.Context, cfg *config.AppConfig, opts WireOpts) (
 	var cleanups []func()
 	c := &Components{}
 
-	needDB := opts.NeedAgent || opts.NeedOrchestrator || opts.NeedMCP
+	needDB := opts.NeedAgent || opts.NeedOrchestrator || opts.NeedMCP || opts.NeedGraph
 	needOllama := opts.NeedAgent || opts.NeedOrchestrator || opts.NeedMCP
 	needSearcher := opts.NeedSearcher || opts.NeedOrchestrator || opts.NeedAgent || opts.NeedMCP
 
@@ -133,7 +135,17 @@ func WireComponents(ctx context.Context, cfg *config.AppConfig, opts WireOpts) (
 		}
 		graph = g
 		cleanups = append(cleanups, func() { graph.Close(ctx) })
+	} else if needDB && opts.NeedGraph {
+		// Read-only graph: no embedder/extractor needed.
+		g, err := knowledge.NewGraph(ctx, knowledge.WithPostgres(pool))
+		if err != nil {
+			runCleanups(cleanups)
+			return nil, err
+		}
+		graph = g
+		cleanups = append(cleanups, func() { graph.Close(ctx) })
 	}
+	c.Graph = graph
 
 	// Event store
 	var es *events.Store
@@ -149,7 +161,8 @@ func WireComponents(ctx context.Context, cfg *config.AppConfig, opts WireOpts) (
 		webSearch := tools.NewWebSearchTool(s, graph)
 		searchKG := tools.NewSearchKnowledgeTool(graph)
 		storeKG := tools.NewStoreKnowledgeTool(graph)
-		c.Agent = agent.New(adapter, webSearch, searchKG, storeKG, es)
+		getGraph := tools.NewGetGraphTool(graph)
+		c.Agent = agent.New(adapter, webSearch, searchKG, storeKG, getGraph, es)
 	}
 
 	// Orchestrator

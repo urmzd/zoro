@@ -22,6 +22,7 @@ When answering:
 - Use web_search to find current information
 - Use search_knowledge to check what's already known
 - Use store_knowledge to persist important findings for future reference
+- Use get_knowledge_graph to see how stored entities and facts are connected
 - Synthesize information from multiple sources
 - Be concise and well-structured in your responses
 - Use markdown formatting
@@ -33,15 +34,17 @@ type Agent struct {
 	webSearch *tools.WebSearchTool
 	searchKG  *tools.SearchKnowledgeTool
 	storeKG   *tools.StoreKnowledgeTool
+	getGraph  *tools.GetGraphTool
 }
 
-func New(adapter *ollama.Adapter, webSearch *tools.WebSearchTool, searchKG *tools.SearchKnowledgeTool, storeKG *tools.StoreKnowledgeTool, e *events.Store) *Agent {
+func New(adapter *ollama.Adapter, webSearch *tools.WebSearchTool, searchKG *tools.SearchKnowledgeTool, storeKG *tools.StoreKnowledgeTool, getGraph *tools.GetGraphTool, e *events.Store) *Agent {
 	return &Agent{
 		adapter:   adapter,
 		events:    e,
 		webSearch: webSearch,
 		searchKG:  searchKG,
 		storeKG:   storeKG,
+		getGraph:  getGraph,
 	}
 }
 
@@ -100,7 +103,7 @@ func (a *Agent) InvokeSync(ctx context.Context, sessionID, content string) (resp
 	webSearchScoped := a.webSearch.WithGroupID(sessionID)
 	searchKGScoped := a.searchKG.WithGroupID(sessionID)
 	storeKGScoped := a.storeKG.WithGroupID(sessionID)
-	toolReg := types.NewToolRegistry(webSearchScoped, searchKGScoped, storeKGScoped)
+	toolReg := types.NewToolRegistry(webSearchScoped, searchKGScoped, storeKGScoped, a.getGraph)
 
 	sessionAgent := saige.NewAgent(saige.AgentConfig{
 		Name:         "zoro",
