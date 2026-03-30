@@ -39,7 +39,7 @@ MCP client (Claude Code, Cursor, etc.)        Terminal
 
 **Key dependencies**:
 - [`saige`](https://github.com/urmzd/saige) — agent loop, knowledge graph, pgvector store, extraction pipeline, Ollama adapter
-- [`mcp-go`](https://github.com/mark3labs/mcp-go) — MCP server framework
+- [`go-sdk`](https://github.com/modelcontextprotocol/go-sdk) — MCP server framework
 
 ## Prerequisites
 
@@ -69,6 +69,7 @@ Commands:
   chat        Chat with Zoro
   research    Run deep research pipeline
   search      Search the web
+  graph       Visualize the knowledge graph
   version     Print version
   help        Show help
 ```
@@ -95,6 +96,14 @@ zoro search rust async runtime comparison
 
 # Machine-readable output
 zoro search -json rust async runtime comparison
+```
+
+**Graph** — visualize the knowledge graph:
+
+```bash
+zoro graph              # text format
+zoro graph -format dot  # Graphviz DOT format
+zoro graph -format json # JSON format
 ```
 
 **Version**:
@@ -132,6 +141,7 @@ The MCP server exposes these tools:
 | `web_search` | Search the web via SearXNG. |
 | `search_knowledge` | Query the knowledge graph for stored facts and entities. |
 | `store_knowledge` | Ingest text into the knowledge graph, extracting entities and relationships. |
+| `get_knowledge_graph` | Visualize the knowledge graph structure (text, DOT, or JSON format). |
 
 ## Development
 
@@ -148,10 +158,11 @@ just build            Build the binary
 just install          Install the binary to $GOPATH/bin
 just stop             Stop Docker services
 just check            Run go vet
+just test             Run tests with race detector
 just lint             Run golangci-lint
 just vuln             Run govulncheck
 just tidy             Tidy Go modules
-just ci               Full CI gate (check + build)
+just ci               Full CI gate (check + test + build)
 just pull <model>     Download an Ollama model
 just upgrade-ollama   Upgrade Ollama
 just bench [model]    Benchmark model TPS (default: qwen3.5:4b)
@@ -165,6 +176,16 @@ just bench [model]    Benchmark model TPS (default: qwen3.5:4b)
 |---------|-------|------|---------|
 | `postgres` | `pgvector/pgvector:pg17` | 5432 | Knowledge graph storage (pgvector) |
 | `searxng` | `searxng/searxng:latest` | 8888 | Web search engine |
+
+### Testing
+
+Tests cover the core packages: config, graph formatting, searcher, tools, and MCP handlers. Run with:
+
+```bash
+just test             # or: go test -race -count=1 ./...
+```
+
+CI runs tests automatically on all pull requests along with linting and vulnerability scanning.
 
 ## Configuration
 

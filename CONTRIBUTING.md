@@ -7,7 +7,6 @@ Thanks for your interest in contributing to Zoro. This guide covers how to set u
 ### Prerequisites
 
 - [Go 1.25+](https://go.dev/dl/)
-- [Node.js 22+](https://nodejs.org/)
 - [Docker & Docker Compose](https://docs.docker.com/get-docker/)
 - [Ollama](https://ollama.ai)
 - [Just](https://github.com/casey/just)
@@ -22,48 +21,39 @@ cd zoro
 # First-time setup: installs deps, starts Docker (PostgreSQL + SearXNG), pulls LLM models
 just setup
 
-# Start Go backend + Next.js frontend with hot reload
+# Start MCP server with Docker services
 just dev
 ```
-
-`just dev` starts Docker services, Ollama, the Go backend on `:8080`, and the Next.js frontend on `:3000`.
 
 ### Verifying Your Setup
 
 ```bash
-just check    # Lint + typecheck (Go vet + Biome + tsc)
+just ci    # Runs vet + tests + build
 ```
 
 ## Project Layout
 
 ```
 internal/
-├── agent/         # Chat agent: SDK wiring, session management, SSE streaming
+├── agent/         # Chat agent: SDK wiring, session management
 ├── app/           # Dependency wiring (wire.go)
 ├── config/        # Environment configuration, embedded SearXNG settings
 ├── events/        # PostgreSQL event store for chat sessions
+├── graph/         # Knowledge graph formatting (DOT, text)
+├── mcp/           # MCP server setup + tool handlers
 ├── models/        # Shared data structures
 ├── orchestrator/  # Research pipeline: search → ingest → summarize
 ├── searcher/      # SearXNG HTTP client
-├── server/        # Echo HTTP handlers, SSE writer, middleware
-├── subprocess/    # Managed SearXNG subprocess (desktop mode)
-└── tools/         # Agent tools: web_search, search_knowledge, store_knowledge
-
-frontend/src/
-├── app/           # Next.js pages, API client, hooks, types
-├── components/    # React components (chat, research, graph, nav)
-└── lib/           # Zustand stores and utilities
-
-api/openapi.yaml   # OpenAPI 3.1 spec (source of truth for API types)
-cmd/desktop/       # Wails desktop app entry point
+├── subprocess/    # Managed SearXNG subprocess
+└── tools/         # Agent tools: web_search, search_knowledge, store_knowledge, get_knowledge_graph
 ```
 
 ### Key Dependencies
 
-- **adk** (`github.com/urmzd/adk`): Agent SDK — typed deltas, provider interface, tool registry
-- **saige** (`github.com/urmzd/saige`): Knowledge graph — PostgreSQL store (pgvector), extraction, embeddings
+- **saige** (`github.com/urmzd/saige`): Agent SDK — agent loop, knowledge graph, pgvector store, extraction, embeddings, Ollama adapter
+- **go-sdk** (`github.com/modelcontextprotocol/go-sdk`): MCP server framework
 - **PostgreSQL**: Relational database with pgvector extension (Docker)
-- **SearXNG**: Metasearch engine (Docker in web mode, managed subprocess in desktop mode)
+- **SearXNG**: Metasearch engine (Docker or managed subprocess)
 - **Ollama**: Local LLM provider
 
 ## Making Changes
@@ -73,18 +63,18 @@ cmd/desktop/       # Wails desktop app entry point
 1. Fork the repository
 2. Create a feature branch from `main`
 3. Make your changes
-4. Run checks: `just check`
+4. Run checks: `just ci`
 5. Submit a pull request
 
-### API Changes
+### Testing
 
-The API spec lives in `api/openapi.yaml`. When changing endpoints:
+Tests live alongside source files as `*_test.go`. Run with:
 
-1. Update `api/openapi.yaml`
-2. Update Go handlers in `internal/server/`
-3. Regenerate frontend types: `just generate`
+```bash
+just test    # go test -race -count=1 ./...
+```
 
-Do not edit files in `frontend/src/generated/` — they are auto-generated.
+Write tests for new functionality. Test files exist for config, graph formatting, searcher, tools, and MCP handlers. Use `httptest.NewServer` for HTTP-dependent tests and mock implementations of `kgtypes.Graph` for knowledge graph tests.
 
 ### Code Conventions
 
@@ -93,15 +83,8 @@ Do not edit files in `frontend/src/generated/` — they are auto-generated.
 - Follow standard Go conventions (`gofmt`, `go vet`)
 - Keep handlers thin — business logic belongs in `internal/agent/` or `internal/orchestrator/`
 - Use the existing config pattern (`internal/config/`) for new environment variables
-- Tools implement `core.Tool` from the adk SDK
-
-**TypeScript:**
-
-- Lint and format with [Biome](https://biomejs.dev): `npx biome check .`
-- Follow the existing Next.js App Router patterns
-- Use Zustand for client-side state
-- Use shadcn/ui for UI primitives
-- Use Streamdown for streaming markdown rendering
+- Tools implement `saige/agent/types.Tool`: `Definition()` + `Execute()`
+- MCP handlers use `github.com/modelcontextprotocol/go-sdk/mcp`
 
 ### Commit Messages
 
@@ -112,15 +95,7 @@ Use conventional commit prefixes:
 - `docs:` — documentation changes
 - `refactor:` — code restructuring without behavior change
 - `build:` — build system or dependency changes
-
-## Desktop Mode
-
-Zoro can run as a standalone desktop app via [Wails](https://wails.io/). In desktop mode, SearXNG is managed as a subprocess. PostgreSQL (Docker) must be running.
-
-```bash
-just build-desktop    # Build the desktop binary
-just dev-desktop      # Run in dev mode
-```
+- `test:` — test additions or changes
 
 ## Reporting Issues
 
@@ -129,7 +104,7 @@ Open an issue on GitHub with:
 - A clear description of the problem or suggestion
 - Steps to reproduce (for bugs)
 - Expected vs actual behavior
-- Environment details (OS, Go version, Node version)
+- Environment details (OS, Go version)
 
 ## License
 

@@ -4,44 +4,35 @@
 
 Zoro is a privacy-first research agent that builds a personal knowledge graph locally. It searches the web via SearXNG, extracts entities and relationships using local LLMs (Ollama), and stores everything in PostgreSQL with pgvector. All data stays on the user's machine.
 
-**Stack**: Go 1.25 + Echo v4 backend, Next.js 16 + React 19 frontend, Wails v2 desktop shell, PostgreSQL (pgvector), SearXNG, Ollama.
+**Stack**: Go 1.25, PostgreSQL (pgvector), SearXNG, Ollama.
 
 ## Architecture
 
-Zoro has two run modes:
+Zoro exposes capabilities through two interfaces: an MCP server for integration with AI tools, and a CLI for direct terminal use.
 
 ```
-Desktop mode (Wails — requires Docker for PostgreSQL)
-  ├── Wails WebView renders embedded static Next.js export
-  ├── Echo v4 serves API via Wails AssetServer (no network port)
-  ├── internal/subprocess/ manages SearXNG lifecycle
-  │   └── SearXNG: pip-installed Python venv (port 8888)
-  ├── PostgreSQL with pgvector (Docker, port 5432)
-  └── Ollama (external, must be running)
-
-Web mode (development — uses Docker)
-  ├── Next.js dev server (port 3000) proxies /api/* → Go backend
-  ├── Echo v4 backend (port 8080)
-  ├── PostgreSQL with pgvector via Docker (port 5432)
-  ├── SearXNG via Docker (port 8888)
-  └── Ollama (external)
+MCP client (Claude Code, Cursor, etc.)        Terminal
+  └── zoro serve (MCP over stdio)              └── zoro <command>
+        │                                            │
+        └──────────────┬─────────────────────────────┘
+                       │
+                 Shared internals
+                 ├── Chat agent (multi-turn, session persistence)
+                 ├── Research pipeline (web search → ingest → LLM synthesis)
+                 ├── Knowledge graph (PostgreSQL + pgvector)
+                 ├── SearXNG (web search, Docker or managed subprocess)
+                 └── Ollama (local LLMs)
 ```
 
 ## Setup Commands
 
 ```bash
-# Desktop app
-just build-desktop   # Build native binary (embeds frontend)
-./zoro-desktop       # First run installs SearXNG; PostgreSQL must be running
-
-# Web development
 just setup           # Install deps, start Docker, pull Ollama models
-just dev             # Start Go backend + Next.js dev server
+just dev             # Start MCP server with Docker + Ollama
 just stop            # Stop Docker services
 ```
 
-**Desktop prerequisites**: Go 1.25+, Node.js 22+, Ollama, Python 3.10+, Just
-**Web prerequisites**: All the above + Docker with Docker Compose
+**Prerequisites**: Go 1.25+, Docker with Docker Compose, Ollama, Just
 
 **Required Ollama models** (pulled by `just setup`):
 - `qwen3.5:4b` — main LLM
@@ -50,13 +41,9 @@ just stop            # Stop Docker services
 
 ## Development Workflow
 
-- `just dev` starts web mode. Go backend on `:8080`, Next.js on `:3000`.
-- `just dev-desktop` builds frontend + runs the Wails desktop app with dev tags.
-- Frontend proxies `/api/*` to the Go backend via `next.config.ts` rewrites (web mode only).
-- In desktop mode, `NEXT_BUILD_TARGET=desktop` triggers a static export (`output: 'export'`).
-- SSE streaming: backend sends `data: {"type":"...","data":{...}}\n\n`; frontend consumes via `fetch` + `ReadableStream`.
-- API spec lives in `api/openapi.yaml` (OpenAPI 3.1, single source of truth for types).
-- Run `just generate` to regenerate the frontend API client (uses `oag` with `.urmzd.oag.yaml`).
+- `just dev` starts Docker services, Ollama, and the MCP server on stdio.
+- CLI subcommands (`chat`, `research`, `search`, `graph`, `version`) share the same internals.
+- SearXNG runs as a Docker container (default) or managed subprocess when `SEARXNG_URL` is unset.
 
 ## Environment Variables
 
@@ -72,11 +59,11 @@ All optional; defaults work for local development.
 | `SEARXNG_URL` | (empty = managed subprocess) | Set to use external SearXNG |
 | `ZORO_DATA_DIR` | `~/.config/zoro` | App data dir (binaries, DB, venv, logs) |
 
-In web mode (`main.go`), empty `SEARXNG_URL` defaults to `http://127.0.0.1:8888` (Docker). In desktop mode (`cmd/desktop/main.go`), empty `SEARXNG_URL` triggers subprocess management. PostgreSQL must always be running (Docker).
+When `SEARXNG_URL` is empty in `just dev`, it defaults to `http://127.0.0.1:8888` (Docker). PostgreSQL must always be running (Docker).
 
 ## Subprocess Management
 
-`internal/subprocess/` manages SearXNG as a child process for the desktop app:
+`internal/subprocess/` manages SearXNG as a child process:
 
 ### SearXNG (`searxng.go`)
 - Creates a Python venv at `$ZORO_DATA_DIR/searxng-venv/`
@@ -84,106 +71,70 @@ In web mode (`main.go`), empty `SEARXNG_URL` defaults to `http://127.0.0.1:8888`
 - Runs Flask server on port 8888
 - Settings file embedded in Go binary (`internal/config/searxng-settings.yml`), written to `$ZORO_DATA_DIR/searxng/settings.yml`
 
-## Wails Desktop Integration
-
-- Entry point: `cmd/desktop/main.go`
-- Build tags: `-tags desktop,production` (release) or `-tags desktop,dev` (development)
-- Frontend assets embedded via `//go:embed all:assets` (copied from `frontend/out/`)
-- macOS needs `CGO_LDFLAGS="-framework UniformTypeIdentifiers"` for linking
-- Wails `AssetServer.Handler` routes to the Echo instance — API calls work without a network port
-- CORS origins include `wails://wails`, `http://wails.localhost`, `http://localhost` for WebView
-- Title bar uses `TitleBarHiddenInset` with a 32px drag region in the frontend layout
-- Logs written to `$ZORO_DATA_DIR/zoro.log`
-
 ## Code Quality
 
 ```bash
-just check            # Run all checks (Go + frontend)
-just check-go         # go vet ./...
-just check-frontend   # biome check . && tsc --noEmit
+just check            # go vet ./...
+just test             # go test -race -count=1 ./...
+just lint             # golangci-lint run ./...
+just vuln             # govulncheck ./...
+just ci               # Full CI gate (check + test + build)
 ```
 
-- **Go**: `go vet` (no additional linters configured)
-- **Frontend**: Biome for linting + formatting, TypeScript strict mode for type checking
-- **No test suite**: No test files or test frameworks exist yet
+- **Go**: `go vet`, golangci-lint, govulncheck
+- **Tests**: Unit tests in `*_test.go` files across packages (config, graph, mcp, searcher, tools)
+- **CI**: GitHub Actions runs vet, test, lint, vuln check, and build on PRs
 
 ## Build
 
 ```bash
-just build            # Web: go build -o zoro . && next build
-just build-desktop    # Desktop: static export + go build with Wails tags
+just build            # go build -o zoro .
+just install          # go install .
 ```
 
-CI pipeline (`.github/workflows/ci.yml`) runs `check-go`, `check-frontend`, then `build`.
+CI pipeline (`.github/workflows/ci.yml`) runs check, test, lint, vuln, then build.
 Releases use semantic versioning via `.github/workflows/release.yml`.
 
 ## Code Conventions
 
-### Go Backend
+### Go
 
-- Entry point: `main.go` (web mode), `cmd/desktop/main.go` (desktop mode)
-- Shared wiring: `internal/app/wire.go` — `Wire(ctx, cfg)` returns configured Echo + cleanup func
-- All domain code in `internal/` (agent, app, config, events, models, orchestrator, searcher, server, subprocess, tools)
-- Tools implement the `adk.Tool` interface: `Definition()` + `Execute()`
-- HTTP handlers in `internal/server/handlers_*.go`, grouped by domain
-- SSE streaming via `internal/server/sse.go`
+- Entry point: `main.go` — CLI dispatch via os.Args subcommand routing
+- CLI commands: `cmd_serve.go`, `cmd_chat.go`, `cmd_research.go`, `cmd_search.go`, `cmd_graph.go`, `cmd_version.go`
+- Shared wiring: `internal/app/wire.go` — `WireComponents(ctx, cfg, opts)` returns configured components + cleanup
+- All domain code in `internal/` (agent, app, config, events, graph, models, mcp, orchestrator, searcher, subprocess, tools)
+- Tools implement the `saige/agent/types.Tool` interface: `Definition()` + `Execute()`
+- MCP server uses `github.com/modelcontextprotocol/go-sdk/mcp`
 - PostgreSQL queries use `pgx` via `pgxpool`
 - No ORM; raw SQL in `internal/events/store.go`
 - Searcher accepts a base URL: `searcher.New(baseURL string)`
 
-### Frontend
-
-- Pages: `frontend/src/app/{page,chat,research,knowledge}/page.tsx`
-- Components: `frontend/src/components/{chat,graph,knowledge,nav,research,timeline,ui}/`
-- State: Zustand stores in `frontend/src/lib/stores/`
-- API client: `frontend/src/app/lib/api.ts`
-- SSE hooks: `use-chat-stream.ts`, `use-research-stream.ts`, `use-knowledge-chat-stream.ts`
-- UI primitives: shadcn/ui in `frontend/src/components/ui/`
-- Biome config: 2-space indent, double quotes, semicolons, line width 100
-- Path alias: `@/*` maps to `./src/*`
-- Pages using `useSearchParams()` must be wrapped in `<Suspense>`
-- `react-force-graph-2d` loaded via `LazyForceGraph2D` wrapper (deferred client-side import)
-- `next.config.ts` conditionally exports static build when `NEXT_BUILD_TARGET=desktop`
-
 ### Naming
 
 - **Go**: PascalCase types, camelCase locals, snake_case in SQL
-- **Frontend**: PascalCase components, camelCase functions/variables
-- **API routes**: kebab-case (`/api/sessions`, `/api/knowledge/search`)
 - **Commits**: conventional commits (feat, fix, chore, etc.) — enforced by semantic release
 
-## API Endpoints
+## MCP Tools
 
-| Method | Path | Purpose |
-|--------|------|---------|
-| POST | `/api/sessions` | Create chat session |
-| GET | `/api/sessions` | List sessions |
-| GET | `/api/sessions/search` | Search sessions by text |
-| GET | `/api/sessions/{id}` | Get session with messages |
-| POST | `/api/sessions/{id}/messages` | Send message (SSE stream) |
-| POST | `/api/research` | Start research (SSE stream) |
-| GET | `/api/knowledge/search` | Search knowledge graph |
-| GET | `/api/knowledge/graph` | Get full graph data |
-| GET | `/api/knowledge/nodes/{id}` | Get node with neighbors |
-| POST | `/api/intent/classify` | Classify query intent |
-| GET | `/api/autocomplete` | Autocomplete suggestions |
-| GET | `/api/status` | Service readiness (postgres, searxng, ollama) |
-| GET | `/api/logs?lines=100` | App log tail |
+| Tool | Description |
+|------|-------------|
+| `chat` | Multi-turn conversation with the agent. Pass `session_id` to continue a session. |
+| `research` | Deep research pipeline: web search, knowledge graph ingestion, and LLM synthesis. |
+| `web_search` | Search the web via SearXNG. |
+| `search_knowledge` | Query the knowledge graph for stored facts and entities. |
+| `store_knowledge` | Ingest text into the knowledge graph, extracting entities and relationships. |
+| `get_knowledge_graph` | Visualize the knowledge graph structure (text, DOT, or JSON format). |
 
 ## Key Dependencies
 
-- **`github.com/urmzd/adk`**: Agent development kit — agent loop, provider interface, tool registry, Ollama adapter, SSE streaming
-- **`github.com/urmzd/saige`**: Knowledge graph, PostgreSQL store (pgvector), entity extraction, embeddings
-- **`github.com/wailsapp/wails/v2`**: Native desktop shell — WebView, asset server, macOS/Windows/Linux
-- SDKs may use local `replace` directives in `go.mod` during development
+- **`github.com/urmzd/saige`**: Agent loop, knowledge graph, pgvector store, extraction pipeline, Ollama adapter
+- **`github.com/modelcontextprotocol/go-sdk`**: MCP server framework
 
 ## Troubleshooting
 
 - If Ollama requests time out (30s), the model may be cold-loading. First request after model switch is slow.
-- Docker uses Colima on macOS. If Docker commands fail, run `colima start`. Docker is only needed for web dev mode.
+- Docker uses Colima on macOS. If Docker commands fail, run `colima start`.
 - Port conflicts on 8080: check for leftover `zoro` processes with `lsof -i :8080`.
 - SearXNG warning about `limiter.toml` is non-critical and can be ignored.
 - SearXNG first install takes ~30s (pip install from GitHub). Subsequent launches reuse the cached venv (~1s).
-- Desktop app logs: `cat "$(python3 -c 'import os; print(os.path.join(os.path.expanduser("~"), "Library", "Application Support", "zoro", "zoro.log"))')"`
-- macOS linker errors with Wails: ensure `CGO_LDFLAGS="-framework UniformTypeIdentifiers"` is set (handled by justfile).
 - If SearXNG pip install fails, delete `$ZORO_DATA_DIR/searxng-venv/` and relaunch.
