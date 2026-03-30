@@ -25,6 +25,8 @@ func main() {
 		err = runResearch(args)
 	case "search":
 		err = runSearch(args)
+	case "graph":
+		err = runGraph(args)
 	case "version":
 		runVersion()
 	case "help", "-h", "--help":
@@ -49,6 +51,7 @@ Commands:
   chat        Chat with Zoro
   research    Run deep research pipeline
   search      Search the web
+  graph       Visualize the knowledge graph
   version     Print version
   help        Show this help
 `)
