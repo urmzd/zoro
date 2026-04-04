@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 	"github.com/urmzd/zoro/internal/config"
 )
 
-func runServe() error {
+func RunServe() error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 

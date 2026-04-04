@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 	"github.com/urmzd/zoro/internal/config"
 )
 
-func runChat(args []string) error {
+func RunChat(args []string) error {
 	fs := flag.NewFlagSet("chat", flag.ExitOnError)
 	sessionID := fs.String("s", "", "session ID to continue")
 	if err := fs.Parse(args); err != nil {

@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"context"
@@ -15,7 +15,7 @@ import (
 	"github.com/urmzd/zoro/internal/graph"
 )
 
-func runGraph(args []string) error {
+func RunGraph(args []string) error {
 	fs := flag.NewFlagSet("graph", flag.ExitOnError)
 	format := fs.String("format", "text", "output format: text, dot, json")
 	limit := fs.Int64("limit", 100, "max number of edges to return")
