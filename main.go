@@ -3,36 +3,40 @@ package main
 import (
 	"fmt"
 	"os"
+
+	"github.com/urmzd/zoro/cmd"
 )
 
 var version = "dev"
 
 func main() {
-	cmd := "serve"
+	cmd.Version = version
+
+	subcmd := "serve"
 	args := os.Args[1:]
 	if len(args) > 0 {
-		cmd = args[0]
+		subcmd = args[0]
 		args = args[1:]
 	}
 
 	var err error
-	switch cmd {
+	switch subcmd {
 	case "serve":
-		err = runServe()
+		err = cmd.RunServe()
 	case "chat":
-		err = runChat(args)
+		err = cmd.RunChat(args)
 	case "research":
-		err = runResearch(args)
+		err = cmd.RunResearch(args)
 	case "search":
-		err = runSearch(args)
+		err = cmd.RunSearch(args)
 	case "graph":
-		err = runGraph(args)
+		err = cmd.RunGraph(args)
 	case "version":
-		runVersion()
+		cmd.RunVersion()
 	case "help", "-h", "--help":
 		printUsage()
 	default:
-		fmt.Fprintf(os.Stderr, "unknown command: %s\n\n", cmd)
+		fmt.Fprintf(os.Stderr, "unknown command: %s\n\n", subcmd)
 		printUsage()
 		os.Exit(1)
 	}

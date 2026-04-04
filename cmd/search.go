@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"context"
@@ -14,7 +14,7 @@ import (
 	"github.com/urmzd/zoro/internal/config"
 )
 
-func runSearch(args []string) error {
+func RunSearch(args []string) error {
 	fs := flag.NewFlagSet("search", flag.ExitOnError)
 	jsonOut := fs.Bool("json", false, "output as JSON")
 	if err := fs.Parse(args); err != nil {

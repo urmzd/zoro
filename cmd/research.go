@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 	"github.com/urmzd/zoro/internal/config"
 )
 
-func runResearch(args []string) error {
+func RunResearch(args []string) error {
 	query := strings.Join(args, " ")
 	if query == "" {
 		fmt.Fprintln(os.Stderr, "usage: zoro research QUERY...")
