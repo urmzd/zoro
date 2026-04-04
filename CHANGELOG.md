@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.7.2 (2026-04-04)
+
+### Refactoring
+
+- move CLI commands from root into cmd/ package (#5) ([c270bef](https://github.com/urmzd/zoro/commit/c270befb3bcd2eb1424e37aa256a170587edded1))
+
+### Miscellaneous
+
+- update sr action from v2 to v3 ([3451d42](https://github.com/urmzd/zoro/commit/3451d4205b3bf0060133d6b31a43a9ff92232522))
+
+[Full Changelog](https://github.com/urmzd/zoro/compare/v0.7.1...v0.7.2)
+
+
 ## 0.7.1 (2026-03-30)
 
 ### Documentation
