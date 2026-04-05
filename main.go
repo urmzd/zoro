@@ -31,6 +31,8 @@ func main() {
 		err = cmd.RunSearch(args)
 	case "graph":
 		err = cmd.RunGraph(args)
+	case "knowledge":
+		err = cmd.RunKnowledge(args)
 	case "version":
 		cmd.RunVersion()
 	case "help", "-h", "--help":
@@ -55,6 +57,7 @@ Commands:
   chat        Chat with Zoro
   research    Run deep research pipeline
   search      Search the web
+  knowledge   Search or store knowledge graph entries
   graph       Visualize the knowledge graph
   version     Print version
   help        Show this help

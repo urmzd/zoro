@@ -41,6 +41,7 @@ type WireOpts struct {
 	NeedSearcher     bool
 	NeedMCP          bool
 	NeedGraph        bool
+	NeedKnowledgeRW  bool // full graph with embedder + extractor
 }
 
 // WireAll returns opts that initialize everything.
@@ -58,8 +59,8 @@ func WireComponents(ctx context.Context, cfg *config.AppConfig, opts WireOpts) (
 	var cleanups []func()
 	c := &Components{}
 
-	needDB := opts.NeedAgent || opts.NeedOrchestrator || opts.NeedMCP || opts.NeedGraph
-	needOllama := opts.NeedAgent || opts.NeedOrchestrator || opts.NeedMCP
+	needDB := opts.NeedAgent || opts.NeedOrchestrator || opts.NeedMCP || opts.NeedGraph || opts.NeedKnowledgeRW
+	needOllama := opts.NeedAgent || opts.NeedOrchestrator || opts.NeedMCP || opts.NeedKnowledgeRW
 	needSearcher := opts.NeedSearcher || opts.NeedOrchestrator || opts.NeedAgent || opts.NeedMCP
 
 	// SearXNG
