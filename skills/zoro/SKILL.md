@@ -1,10 +1,11 @@
 ---
 name: zoro
 description: >
-  Privacy-first AI research agent with local knowledge graph. Use when the user
-  wants to search the web, run deep research, chat with an AI assistant, query
-  or store knowledge in a local graph, or visualize entity relationships.
-  Triggers on: research, knowledge graph, web search, SearXNG, Ollama, entity
+  Privacy-first AI research agent with local knowledge graph and file exploration.
+  Use when the user wants to search the web, run deep research, chat with an AI
+  assistant, query or store knowledge in a local graph, visualize entity
+  relationships, or search/read local files. Triggers on: research, knowledge
+  graph, web search, file search, local files, SearXNG, Ollama, entity
   extraction, multi-turn chat, zoro.
 user-invocable: true
 allowed-tools: Bash, Read
@@ -12,7 +13,7 @@ allowed-tools: Bash, Read
 
 # Zoro
 
-Privacy-first research agent that builds a personal knowledge graph locally using Ollama, PostgreSQL+pgvector, and SearXNG.
+Privacy-first research agent that builds a personal knowledge graph locally using Ollama, PostgreSQL+pgvector, and SearXNG. Also supports local file search and exploration.
 
 ## Prerequisites
 
@@ -22,13 +23,13 @@ Before running any command, verify services are up:
 bash ${CLAUDE_SKILL_DIR}/scripts/preflight.sh
 ```
 
-If preflight fails, start services with `just setup && just dev` from the project root.
+If preflight fails, start services with `just setup` from the project root.
 
 ## Commands
 
 ### Chat
 
-Multi-turn conversational AI with tool use (web search, knowledge graph).
+Multi-turn conversational AI with tool use (web search, file search, knowledge graph).
 
 ```bash
 # One-shot chat
@@ -42,6 +43,14 @@ zoro chat -json "What is Rust?"
 ```
 
 **Session management:** Use `-json` to capture the `session_id` from the response, then pass it back with `-s` for continuity.
+
+The chat agent has access to these tools internally:
+- `web_search` — search the web for current information
+- `file_search` — search local file contents by regex pattern
+- `read_file` — read specific local files
+- `search_knowledge` — query the knowledge graph
+- `store_knowledge` — persist findings to the knowledge graph
+- `get_knowledge_graph` — visualize entity relationships
 
 ### Research
 
