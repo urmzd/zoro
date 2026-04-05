@@ -12,7 +12,7 @@ var version = "dev"
 func main() {
 	cmd.Version = version
 
-	subcmd := "serve"
+	subcmd := "help"
 	args := os.Args[1:]
 	if len(args) > 0 {
 		subcmd = args[0]
@@ -21,18 +21,16 @@ func main() {
 
 	var err error
 	switch subcmd {
-	case "serve":
-		err = cmd.RunServe()
 	case "chat":
 		err = cmd.RunChat(args)
 	case "research":
 		err = cmd.RunResearch(args)
 	case "search":
 		err = cmd.RunSearch(args)
-	case "graph":
-		err = cmd.RunGraph(args)
 	case "knowledge":
 		err = cmd.RunKnowledge(args)
+	case "graph":
+		err = cmd.RunGraph(args)
 	case "version":
 		cmd.RunVersion()
 	case "help", "-h", "--help":
@@ -53,7 +51,6 @@ func printUsage() {
 	fmt.Fprintf(os.Stderr, `Usage: zoro <command> [flags]
 
 Commands:
-  serve       Start MCP server on stdio (default)
   chat        Chat with Zoro
   research    Run deep research pipeline
   search      Search the web
