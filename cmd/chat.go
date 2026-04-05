@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -16,6 +17,7 @@ import (
 func RunChat(args []string) error {
 	fs := flag.NewFlagSet("chat", flag.ExitOnError)
 	sessionID := fs.String("s", "", "session ID to continue")
+	jsonOut := fs.Bool("json", false, "output as JSON (includes session_id)")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -52,7 +54,15 @@ func RunChat(args []string) error {
 		return err
 	}
 
-	fmt.Println(response)
-	fmt.Fprintf(os.Stderr, "\nsession: %s\n", returnedID)
+	if *jsonOut {
+		out, _ := json.Marshal(map[string]string{
+			"response":   response,
+			"session_id": returnedID,
+		})
+		fmt.Println(string(out))
+	} else {
+		fmt.Println(response)
+		fmt.Fprintf(os.Stderr, "\nsession: %s\n", returnedID)
+	}
 	return nil
 }
