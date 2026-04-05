@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.8.0 (2026-04-05)
+
+### Features
+
+- **chat**: add JSON output flag ([fca5867](https://github.com/urmzd/zoro/commit/fca5867c3ab8d0e66d81a62f89abadb885126fba))
+- **cli**: add knowledge graph search and store commands ([a6f5a0a](https://github.com/urmzd/zoro/commit/a6f5a0a1a1d6971f925b66f7fc595816c02fe227))
+
+### Documentation
+
+- expand zoro skill documentation and add preflight script ([0b131ba](https://github.com/urmzd/zoro/commit/0b131ba17e0a318c9f4673a0371dd0033c1f173c))
+
+### Miscellaneous
+
+- add linguist overrides to fix language stats (#6) ([634e6b9](https://github.com/urmzd/zoro/commit/634e6b97d05102230deea9162e6db9732e023a02))
+
+[Full Changelog](https://github.com/urmzd/zoro/compare/v0.7.2...v0.8.0)
+
+
 ## 0.7.2 (2026-04-04)
 
 ### Refactoring
