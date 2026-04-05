@@ -16,35 +16,41 @@ import (
 	"github.com/urmzd/zoro/internal/tools"
 )
 
-const systemPrompt = `You are Zoro, an AI research assistant with access to tools. Your purpose is to help users understand topics by searching the web, querying a knowledge graph, and storing important findings.
+const systemPrompt = `You are Zoro, an AI research assistant with access to tools. Your purpose is to help users understand topics by searching the web, exploring local files, querying a knowledge graph, and storing important findings.
 
 When answering:
-- Use web_search to find current information
-- Use search_knowledge to check what's already known
+- Use web_search to find current information online
+- Use file_search to find relevant content in local files
+- Use read_file to read specific local files for detailed information
+- Use search_knowledge to check what's already known in the knowledge graph
 - Use store_knowledge to persist important findings for future reference
 - Use get_knowledge_graph to see how stored entities and facts are connected
-- Synthesize information from multiple sources
+- Synthesize information from multiple sources (web and local)
 - Be concise and well-structured in your responses
 - Use markdown formatting
 - IMPORTANT: When citing information from web_search results, always include inline citations using the result index numbers like [1], [2], [3]. For example: "React 19 introduced server components [1] and improved hydration [3]." Every factual claim from search results must have a citation.`
 
 type Agent struct {
-	adapter   *ollama.Adapter
-	events    *events.Store
-	webSearch *tools.WebSearchTool
-	searchKG  *tools.SearchKnowledgeTool
-	storeKG   *tools.StoreKnowledgeTool
-	getGraph  *tools.GetGraphTool
+	adapter    *ollama.Adapter
+	events     *events.Store
+	webSearch  *tools.WebSearchTool
+	searchKG   *tools.SearchKnowledgeTool
+	storeKG    *tools.StoreKnowledgeTool
+	getGraph   *tools.GetGraphTool
+	fileSearch *tools.FileSearchTool
+	readFile   *tools.ReadFileTool
 }
 
-func New(adapter *ollama.Adapter, webSearch *tools.WebSearchTool, searchKG *tools.SearchKnowledgeTool, storeKG *tools.StoreKnowledgeTool, getGraph *tools.GetGraphTool, e *events.Store) *Agent {
+func New(adapter *ollama.Adapter, webSearch *tools.WebSearchTool, searchKG *tools.SearchKnowledgeTool, storeKG *tools.StoreKnowledgeTool, getGraph *tools.GetGraphTool, fileSearch *tools.FileSearchTool, readFile *tools.ReadFileTool, e *events.Store) *Agent {
 	return &Agent{
-		adapter:   adapter,
-		events:    e,
-		webSearch: webSearch,
-		searchKG:  searchKG,
-		storeKG:   storeKG,
-		getGraph:  getGraph,
+		adapter:    adapter,
+		events:     e,
+		webSearch:  webSearch,
+		searchKG:   searchKG,
+		storeKG:    storeKG,
+		getGraph:   getGraph,
+		fileSearch: fileSearch,
+		readFile:   readFile,
 	}
 }
 
@@ -103,7 +109,7 @@ func (a *Agent) InvokeSync(ctx context.Context, sessionID, content string) (resp
 	webSearchScoped := a.webSearch.WithGroupID(sessionID)
 	searchKGScoped := a.searchKG.WithGroupID(sessionID)
 	storeKGScoped := a.storeKG.WithGroupID(sessionID)
-	toolReg := types.NewToolRegistry(webSearchScoped, searchKGScoped, storeKGScoped, a.getGraph)
+	toolReg := types.NewToolRegistry(webSearchScoped, searchKGScoped, storeKGScoped, a.getGraph, a.fileSearch, a.readFile)
 
 	sessionAgent := saige.NewAgent(saige.AgentConfig{
 		Name:         "zoro",
