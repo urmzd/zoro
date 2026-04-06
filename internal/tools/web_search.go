@@ -20,9 +20,10 @@ type searchResultJSON struct {
 
 // WebSearchTool implements types.Tool for web searching.
 type WebSearchTool struct {
-	searcher *searcher.Searcher
-	graph    kgtypes.Graph
-	groupID  string
+	searcher    *searcher.Searcher
+	graph       kgtypes.Graph
+	groupID     string
+	autoIngest  bool
 }
 
 func NewWebSearchTool(s *searcher.Searcher, graph kgtypes.Graph) *WebSearchTool {
@@ -30,7 +31,12 @@ func NewWebSearchTool(s *searcher.Searcher, graph kgtypes.Graph) *WebSearchTool 
 }
 
 func (t *WebSearchTool) WithGroupID(id string) *WebSearchTool {
-	return &WebSearchTool{searcher: t.searcher, graph: t.graph, groupID: id}
+	return &WebSearchTool{searcher: t.searcher, graph: t.graph, groupID: id, autoIngest: t.autoIngest}
+}
+
+// WithAutoIngest returns a copy with auto-ingestion into the knowledge graph enabled.
+func (t *WebSearchTool) WithAutoIngest() *WebSearchTool {
+	return &WebSearchTool{searcher: t.searcher, graph: t.graph, groupID: t.groupID, autoIngest: true}
 }
 
 func (t *WebSearchTool) Definition() types.ToolDef {
@@ -81,8 +87,8 @@ func (t *WebSearchTool) Execute(ctx context.Context, args map[string]any) (strin
 		return "[]", nil
 	}
 
-	// Auto-ingest results into knowledge graph
-	if t.graph != nil {
+	// Auto-ingest results into knowledge graph (only when explicitly enabled)
+	if t.autoIngest && t.graph != nil {
 		for _, item := range items {
 			body := fmt.Sprintf("Title: %s\nURL: %s\nSnippet: %s", item.Title, item.URL, item.Snippet)
 			input := &kgtypes.EpisodeInput{
