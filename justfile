@@ -3,8 +3,7 @@
 
 download:
     echo "Pulling LLM models (this may take a few minutes)..."
-    ollama pull qwen3.5:4b
-    ollama pull qwen3.5:0.8b
+    ollama pull gemma4:latest
     ollama pull nomic-embed-text
 
 # Full first-time setup: install deps, pull models, start services
@@ -86,5 +85,5 @@ upgrade-ollama:
     brew upgrade ollama || curl -fsSL https://ollama.com/install.sh | sh
 
 # Benchmark model performance
-bench model="qwen3.5:4b":
+bench model="gemma4:latest":
     python3 scripts/bench.py {{ model }}

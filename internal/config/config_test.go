@@ -9,7 +9,7 @@ import (
 func TestLoad_Defaults(t *testing.T) {
 	// Clear env vars to test defaults
 	for _, key := range []string{
-		"OLLAMA_HOST", "OLLAMA_MODEL", "OLLAMA_FAST_MODEL",
+		"OLLAMA_HOST", "OLLAMA_MODEL",
 		"EMBEDDING_MODEL", "POSTGRES_URL", "SEARXNG_URL", "ZORO_DATA_DIR",
 	} {
 		t.Setenv(key, "")
@@ -20,11 +20,8 @@ func TestLoad_Defaults(t *testing.T) {
 	if cfg.OllamaHost != "http://localhost:11434" {
 		t.Errorf("OllamaHost = %q, want %q", cfg.OllamaHost, "http://localhost:11434")
 	}
-	if cfg.OllamaModel != "qwen3.5:4b" {
-		t.Errorf("OllamaModel = %q, want %q", cfg.OllamaModel, "qwen3.5:4b")
-	}
-	if cfg.OllamaFastModel != "qwen3.5:0.8b" {
-		t.Errorf("OllamaFastModel = %q, want %q", cfg.OllamaFastModel, "qwen3.5:0.8b")
+	if cfg.OllamaModel != "gemma4:latest" {
+		t.Errorf("OllamaModel = %q, want %q", cfg.OllamaModel, "gemma4:latest")
 	}
 	if cfg.EmbeddingModel != "nomic-embed-text" {
 		t.Errorf("EmbeddingModel = %q, want %q", cfg.EmbeddingModel, "nomic-embed-text")

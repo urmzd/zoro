@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Benchmark Qwen 3.5 small models for autocompletion TPS via Ollama."""
+"""Benchmark LLM models for generation TPS via Ollama."""
 
 import json
 import subprocess
@@ -10,10 +10,8 @@ import urllib.error
 OLLAMA_URL = "http://localhost:11434"
 
 MODELS = [
-    "qwen3.5:0.8b",
-    "qwen3.5:2b",
-    "qwen3.5:4b",
-    "qwen3.5:9b",
+    "gemma3:latest",
+    "gemma4:latest",
 ]
 
 PROMPT = (

@@ -12,8 +12,7 @@ var SearXNGSettings []byte
 type AppConfig struct {
 	OllamaHost      string
 	OllamaModel     string
-	OllamaFastModel string
-	EmbeddingModel  string
+	EmbeddingModel string
 	PostgresURL     string
 	SearXNGURL      string // empty = managed subprocess
 	DataDir         string
@@ -22,9 +21,8 @@ type AppConfig struct {
 func Load() *AppConfig {
 	return &AppConfig{
 		OllamaHost:      envOr("OLLAMA_HOST", "http://localhost:11434"),
-		OllamaModel:     envOr("OLLAMA_MODEL", "qwen3.5:4b"),
-		OllamaFastModel: envOr("OLLAMA_FAST_MODEL", "qwen3.5:0.8b"),
-		EmbeddingModel:  envOr("EMBEDDING_MODEL", "nomic-embed-text"),
+		OllamaModel:     envOr("OLLAMA_MODEL", "gemma4:latest"),
+		EmbeddingModel: envOr("EMBEDDING_MODEL", "nomic-embed-text"),
 		PostgresURL:     envOr("POSTGRES_URL", "postgres://zoro:zoro@localhost:5432/zoro?sslmode=disable"),
 		SearXNGURL:      os.Getenv("SEARXNG_URL"),
 		DataDir:         envOr("ZORO_DATA_DIR", defaultDataDir()),
