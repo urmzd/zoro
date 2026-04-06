@@ -19,9 +19,9 @@ setup: download
     docker compose up -d
 
     echo ""
-    echo "Done! Run 'just dev' to start the MCP server."
+    echo "Done! Run 'just dev' to start services."
 
-# Run MCP server (starts Docker services + Ollama if needed)
+# Start Docker services + Ollama
 dev:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -36,8 +36,7 @@ dev:
     # Ensure Docker services are running
     docker compose up -d
 
-    # Run MCP server on stdio
-    go run . serve
+    echo "Services ready. Use 'zoro <command>' to interact."
 
 # Build the binary
 build:
