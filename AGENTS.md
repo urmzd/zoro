@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Zoro is a privacy-first research agent that builds a personal knowledge graph locally. It searches the web via SearXNG, extracts entities and relationships using local LLMs (Ollama), and stores everything in PostgreSQL with pgvector. All data stays on the user's machine.
+Zoro is a privacy-first research agent that builds a personal knowledge graph locally. It searches the web via SearXNG and local files, extracts entities and relationships using local LLMs (Ollama), and stores everything in PostgreSQL with pgvector. All data stays on the user's machine.
 
 **Stack**: Go 1.25, PostgreSQL (pgvector), SearXNG, Ollama.
 
@@ -15,7 +15,7 @@ Terminal
   └── zoro <command>
         │
         ├── Chat agent (multi-turn, session persistence)
-        ├── Research pipeline (web search → ingest → LLM synthesis)
+        ├── Research pipeline (web search + file exploration → ingest → LLM synthesis)
         ├── Knowledge graph (PostgreSQL + pgvector)
         ├── SearXNG (web search, Docker or managed subprocess)
         └── Ollama (local LLMs)
@@ -32,8 +32,7 @@ just stop            # Stop Docker services
 **Prerequisites**: Go 1.25+, Docker with Docker Compose, Ollama, Just
 
 **Required Ollama models** (pulled by `just setup`):
-- `qwen3.5:4b` — main LLM
-- `qwen3.5:0.8b` — fast model (intent classification, autocomplete)
+- `gemma4:latest` — main LLM
 - `nomic-embed-text` — embeddings
 
 ## Development Workflow
@@ -49,8 +48,7 @@ All optional; defaults work for local development.
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `OLLAMA_HOST` | `http://localhost:11434` | Ollama server URL |
-| `OLLAMA_MODEL` | `qwen3.5:4b` | Main LLM model |
-| `OLLAMA_FAST_MODEL` | `qwen3.5:0.8b` | Fast model (autocomplete/intent) |
+| `OLLAMA_MODEL` | `gemma4:latest` | Main LLM model |
 | `EMBEDDING_MODEL` | `nomic-embed-text` | Embedding model |
 | `POSTGRES_URL` | `postgres://zoro:zoro@localhost:5432/zoro?sslmode=disable` | PostgreSQL connection URL |
 | `SEARXNG_URL` | (empty = managed subprocess) | Set to use external SearXNG |
@@ -115,7 +113,7 @@ Releases use semantic versioning via `.github/workflows/release.yml`.
 | Command | Description |
 |---------|-------------|
 | `chat` | Multi-turn conversation with the agent. Pass `-s SESSION_ID` to continue a session. |
-| `research` | Deep research pipeline: web search, knowledge graph ingestion, and LLM synthesis. |
+| `research` | Deep research pipeline: web search, file exploration, knowledge graph ingestion, and LLM synthesis. |
 | `search` | Search the web via SearXNG. Use `-json` for machine-readable output. |
 | `knowledge search` | Query the knowledge graph for stored facts and entities. |
 | `knowledge store` | Ingest text into the knowledge graph, extracting entities and relationships. |

@@ -44,7 +44,7 @@ internal/
 ├── orchestrator/  # Research pipeline: search → ingest → summarize
 ├── searcher/      # SearXNG HTTP client
 ├── subprocess/    # Managed SearXNG subprocess
-└── tools/         # Agent tools: web_search, search_knowledge, store_knowledge, get_knowledge_graph
+└── tools/         # Agent tools: web_search, file_search, read_file, search_knowledge, store_knowledge, get_knowledge_graph
 ```
 
 ### Key Dependencies

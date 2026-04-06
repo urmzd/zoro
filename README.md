@@ -22,13 +22,14 @@
   </tr>
 </table>
 
-Zoro searches the web, extracts entities and relationships using local LLMs, and stores everything locally — your data never leaves your machine.
+Zoro searches the web and local files, extracts entities and relationships using local LLMs, and stores everything locally — your data never leaves your machine.
 
 ## Features
 
 - **Knowledge graph** — entities and relationships extracted from web content, stored in PostgreSQL + pgvector
 - **Multi-turn chat** — conversational agent with session persistence
-- **Deep research** — automated pipeline: web search, knowledge ingestion, LLM synthesis
+- **Local file exploration** — search and read local files to ground answers in your own data
+- **Deep research** — automated pipeline: web search, file exploration, knowledge ingestion, LLM synthesis
 - **Fully local** — Ollama for inference, SearXNG for search, PostgreSQL for storage
 - **CLI interface** — chat, research, search, knowledge management, and graph visualization
 
@@ -91,8 +92,7 @@ All environment variables are optional. Defaults work out of the box.
 | Variable | Default | Description |
 |---|---|---|
 | `OLLAMA_HOST` | `http://localhost:11434` | Ollama server URL |
-| `OLLAMA_MODEL` | `qwen3.5:4b` | Main LLM for reasoning |
-| `OLLAMA_FAST_MODEL` | `qwen3.5:0.8b` | Fast model for lightweight tasks |
+| `OLLAMA_MODEL` | `gemma4:latest` | Main LLM for reasoning |
 | `EMBEDDING_MODEL` | `nomic-embed-text` | Model used for embeddings |
 | `POSTGRES_URL` | `postgres://zoro:zoro@localhost:5432/zoro?sslmode=disable` | PostgreSQL connection URL |
 | `SEARXNG_URL` | (managed subprocess) | Set to use external SearXNG |
