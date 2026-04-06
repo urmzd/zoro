@@ -97,7 +97,7 @@ func (t *FileSearchTool) Execute(ctx context.Context, args map[string]any) (stri
 		if err != nil {
 			return nil
 		}
-		defer f.Close()
+		defer func() { _ = f.Close() }()
 
 		relPath, _ := filepath.Rel(root, path)
 		if relPath == "" {

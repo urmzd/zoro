@@ -71,7 +71,7 @@ func (t *ReadFileTool) Execute(ctx context.Context, args map[string]any) (string
 	if err != nil {
 		return "", fmt.Errorf("read_file: %w", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	var b strings.Builder
 	scanner := bufio.NewScanner(f)
