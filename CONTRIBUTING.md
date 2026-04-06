@@ -21,7 +21,7 @@ cd zoro
 # First-time setup: installs deps, starts Docker (PostgreSQL + SearXNG), pulls LLM models
 just setup
 
-# Start MCP server with Docker services
+# Start Docker services + Ollama
 just dev
 ```
 
@@ -40,7 +40,6 @@ internal/
 ├── config/        # Environment configuration, embedded SearXNG settings
 ├── events/        # PostgreSQL event store for chat sessions
 ├── graph/         # Knowledge graph formatting (DOT, text)
-├── mcp/           # MCP server setup + tool handlers
 ├── models/        # Shared data structures
 ├── orchestrator/  # Research pipeline: search → ingest → summarize
 ├── searcher/      # SearXNG HTTP client
@@ -51,7 +50,6 @@ internal/
 ### Key Dependencies
 
 - **saige** (`github.com/urmzd/saige`): Agent SDK — agent loop, knowledge graph, pgvector store, extraction, embeddings, Ollama adapter
-- **go-sdk** (`github.com/modelcontextprotocol/go-sdk`): MCP server framework
 - **PostgreSQL**: Relational database with pgvector extension (Docker)
 - **SearXNG**: Metasearch engine (Docker or managed subprocess)
 - **Ollama**: Local LLM provider
@@ -74,7 +72,7 @@ Tests live alongside source files as `*_test.go`. Run with:
 just test    # go test -race -count=1 ./...
 ```
 
-Write tests for new functionality. Test files exist for config, graph formatting, searcher, tools, and MCP handlers. Use `httptest.NewServer` for HTTP-dependent tests and mock implementations of `kgtypes.Graph` for knowledge graph tests.
+Write tests for new functionality. Test files exist for config, graph formatting, searcher, and tools. Use `httptest.NewServer` for HTTP-dependent tests and mock implementations of `kgtypes.Graph` for knowledge graph tests.
 
 ### Code Conventions
 
@@ -84,8 +82,6 @@ Write tests for new functionality. Test files exist for config, graph formatting
 - Keep handlers thin — business logic belongs in `internal/agent/` or `internal/orchestrator/`
 - Use the existing config pattern (`internal/config/`) for new environment variables
 - Tools implement `saige/agent/types.Tool`: `Definition()` + `Execute()`
-- MCP handlers use `github.com/modelcontextprotocol/go-sdk/mcp`
-
 ### Commit Messages
 
 Use conventional commit prefixes:

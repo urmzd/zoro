@@ -22,7 +22,7 @@
   </tr>
 </table>
 
-Zoro searches the web, extracts entities and relationships using local LLMs, and stores everything locally — your data never leaves your machine. It works as an [MCP](https://modelcontextprotocol.io/) server for Claude Code, Cursor, and other MCP clients, or as a standalone CLI.
+Zoro searches the web, extracts entities and relationships using local LLMs, and stores everything locally — your data never leaves your machine.
 
 ## Features
 
@@ -30,7 +30,7 @@ Zoro searches the web, extracts entities and relationships using local LLMs, and
 - **Multi-turn chat** — conversational agent with session persistence
 - **Deep research** — automated pipeline: web search, knowledge ingestion, LLM synthesis
 - **Fully local** — Ollama for inference, SearXNG for search, PostgreSQL for storage
-- **Dual interface** — MCP server for tool-aware clients, CLI for direct terminal use
+- **CLI interface** — chat, research, search, knowledge management, and graph visualization
 
 ## Install
 
@@ -84,37 +84,6 @@ zoro graph -format json # JSON
 zoro version
 ```
 
-### MCP Server
-
-When run without a command (or with `serve`), Zoro starts an MCP server on stdio:
-
-```bash
-zoro          # or: zoro serve
-```
-
-Add to your MCP client config (e.g. `~/.claude.json` or project `.mcp.json`):
-
-```json
-{
-  "mcpServers": {
-    "zoro": {
-      "command": "/path/to/zoro"
-    }
-  }
-}
-```
-
-**MCP Tools:**
-
-| Tool | Description |
-|------|-------------|
-| `chat` | Multi-turn conversation with the agent. Pass `session_id` to continue a session. |
-| `research` | Deep research pipeline: web search, knowledge graph ingestion, and LLM synthesis. |
-| `web_search` | Search the web via SearXNG. |
-| `search_knowledge` | Query the knowledge graph for stored facts and entities. |
-| `store_knowledge` | Ingest text into the knowledge graph, extracting entities and relationships. |
-| `get_knowledge_graph` | Visualize the knowledge graph structure (text, DOT, or JSON format). |
-
 ## Configuration
 
 All environment variables are optional. Defaults work out of the box.
@@ -138,7 +107,6 @@ This repo's conventions are available as portable agent skills in [`skills/`](sk
 ## Related
 
 - [`saige`](https://github.com/urmzd/saige) — agent loop, knowledge graph, pgvector store, extraction pipeline, Ollama adapter
-- [`go-sdk`](https://github.com/modelcontextprotocol/go-sdk) — MCP server framework
 
 ## License
 
