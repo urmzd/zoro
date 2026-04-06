@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.9.0 (2026-04-06)
+
+### Features
+
+- **tools**: add file_search and read_file tools for local exploration ([caee62f](https://github.com/urmzd/zoro/commit/caee62f403e038da4d13d1fe920d73ad9eb2c1cd))
+
+### Bug Fixes
+
+- **tools**: suppress unchecked error in defer close ([a36ff6c](https://github.com/urmzd/zoro/commit/a36ff6c5f7505c0005ad7489b37a6237cf65d143))
+
+### Documentation
+
+- remove MCP server references from documentation ([c88df1e](https://github.com/urmzd/zoro/commit/c88df1e67a9a2c3de7a50b80f2558c71522a79b1))
+- **skill**: document file search and exploration capabilities ([c63d915](https://github.com/urmzd/zoro/commit/c63d9157fc907750f53a925de7d28ddf8513c163))
+
+### Refactoring
+
+- remove MCP server and serve command ([49c621e](https://github.com/urmzd/zoro/commit/49c621eb000a245706c8ad69880d1b570efae123))
+
+### Miscellaneous
+
+- **justfile**: remove MCP server from dev workflow ([d987055](https://github.com/urmzd/zoro/commit/d9870558dd917389f0e17e76613d9f08ad7def55))
+- remove MCP SDK dependencies ([78d8741](https://github.com/urmzd/zoro/commit/78d8741fc86cd65eae64935c9296ae7ae6003268))
+
+[Full Changelog](https://github.com/urmzd/zoro/compare/v0.8.0...v0.9.0)
+
+
 ## 0.8.0 (2026-04-05)
 
 ### Features
